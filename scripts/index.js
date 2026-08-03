@@ -38,7 +38,7 @@ function loadHeader() {
   const placeholder = document.getElementById('header-placeholder');
   if (!placeholder) return;
 
-  fetch('/header.html')
+  fetch('header.html')
     .then(res => res.text())
     .then(html => {
       placeholder.innerHTML = html;
