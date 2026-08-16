@@ -10,7 +10,10 @@
  *   BOOKING_FROM    optional — verified sender in Brevo (default post@clench.no)
  */
 
-const DEFAULT_TO = 'post@clench.no';
+// Bookings land here while testing — switch to post@clench.no when going live.
+const DEFAULT_TO = 'seb@clench.no';
+
+// Public sender address, verified in Brevo. Leave this one alone.
 const DEFAULT_FROM = 'post@clench.no';
 
 // Longest we accept per field. Anything past this is a bot or a mistake.
