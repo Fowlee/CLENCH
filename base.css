@@ -1375,10 +1375,30 @@ h1, h2, h3, .logo {
   border-color: #ff2a39;
 }
 
+/* Sits apart from the contact links, under its own small caption */
 .footer-social {
   display: flex;
-  gap: 1rem;
-  margin-top: 0.4rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.45rem;
+  margin-top: 1.1rem;
+}
+
+.footer-social .social-label {
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #7d7d7d;
+}
+
+.footer-social a {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.footer-social svg {
+  flex: none;
 }
 
 .footer-bottom {
@@ -1415,6 +1435,10 @@ h1, h2, h3, .logo {
   }
 
   .footer-col {
+    align-items: center;
+  }
+
+  .footer-social {
     align-items: center;
   }
 
