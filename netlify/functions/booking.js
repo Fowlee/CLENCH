@@ -10,14 +10,30 @@
  *   BOOKING_FROM    optional — verified sender in Brevo (default post@clench.no)
  */
 
-// Bookings land here while testing — switch to post@clench.no when going live.
-const DEFAULT_TO = 'seb@clench.no';
+// Where bookings land. Override without a deploy by setting BOOKING_TO.
+const DEFAULT_TO = 'post@clench.no';
 
 // Public sender address, verified in Brevo. Leave this one alone.
 const DEFAULT_FROM = 'post@clench.no';
 
 // Longest we accept per field. Anything past this is a bot or a mistake.
 const MAX_LENGTH = 2000;
+
+/* ----- Branding for the customer's copy -----
+ * Edit these freely. The logo has to be a full https URL to a raster image:
+ * email clients don't render SVG, and many block images until the reader
+ * allows them, so nothing important should live inside the picture.
+ */
+const SITE_URL = 'https://clench.no';
+const LOGO_URL = SITE_URL + '/images/clench-email-logo.png';
+const TAGLINE = 'Custom-fit mouthguards, made in Norway';
+const RED = '#ff2a39';
+
+// Lines of the signature. Add a phone number or Instagram link here.
+const SIGNATURE_LINES = [
+  { label: 'post@clench.no', href: 'mailto:post@clench.no' },
+  { label: 'clench.no', href: SITE_URL }
+];
 
 const FIELDS = [
   ['name', 'Name'],
@@ -74,6 +90,54 @@ function render(booking) {
     '</table>';
 
   return { text, html };
+}
+
+/* Wraps content in the branded shell: black header with the logo, white card,
+ * signature underneath. Tables and inline styles throughout — Outlook ignores
+ * most modern CSS, so this is the layout language email still agrees on.
+ */
+function shell(inner) {
+  const signature = SIGNATURE_LINES
+    .map(line =>
+      '<a href="' + line.href + '" style="color:' + RED + ';text-decoration:none">' +
+      escapeHtml(line.label) + '</a>'
+    )
+    .join('<span style="color:#ccc"> &nbsp;·&nbsp; </span>');
+
+  return '' +
+  '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" ' +
+         'style="background:#f4f4f4;padding:24px 12px">' +
+    '<tr><td align="center">' +
+      '<table role="presentation" width="600" cellpadding="0" cellspacing="0" ' +
+             'style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden">' +
+
+        '<tr><td align="center" style="background:#000000;padding:28px 24px">' +
+          '<img src="' + LOGO_URL + '" width="180" alt="CLENCH" ' +
+               'style="display:block;border:0;width:180px;height:auto">' +
+        '</td></tr>' +
+
+        '<tr><td style="padding:32px 32px 8px;font-family:Arial,Helvetica,sans-serif;' +
+                       'font-size:15px;line-height:1.6;color:#111111">' +
+          inner +
+        '</td></tr>' +
+
+        '<tr><td style="padding:24px 32px 32px">' +
+          '<div style="border-top:1px solid #eeeeee;padding-top:20px;' +
+                      'font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#555555">' +
+            '<div style="font-weight:bold;color:#111111;letter-spacing:0.04em">CLENCH</div>' +
+            '<div style="padding:2px 0 8px">' + escapeHtml(TAGLINE) + '</div>' +
+            '<div>' + signature + '</div>' +
+          '</div>' +
+        '</td></tr>' +
+
+      '</table>' +
+    '</td></tr>' +
+  '</table>';
+}
+
+function signatureText() {
+  return '– CLENCH\n' + TAGLINE + '\n' +
+    SIGNATURE_LINES.map(line => line.label).join(' · ');
 }
 
 function sendEmail(apiKey, payload) {
@@ -158,20 +222,19 @@ exports.handler = async event => {
       to: [{ email: booking.email, name: booking.name }],
       replyTo: { email: to, name: 'CLENCH' },
       subject: 'Your CLENCH booking request',
-      textContent: 'Hi ' + booking.name + ',\n\n' +
+      textContent: 'Hi ' + booking.name.split(' ')[0] + ',\n\n' +
         'Thanks for booking an appointment with CLENCH. We\'ll get back to you with ' +
         'available times for impression taking.\n\nHere\'s what you sent us:\n\n' +
-        body.text + '\n\nIf anything is wrong, just reply to this email.\n\n– CLENCH',
-      htmlContent:
-        '<div style="font-family:Arial,sans-serif;font-size:15px;color:#111">' +
-        '<p>Hi ' + escapeHtml(booking.name) + ',</p>' +
-        '<p>Thanks for booking an appointment with CLENCH. We\'ll get back to you with ' +
-        'available times for impression taking.</p>' +
-        '<p><strong>Here\'s what you sent us:</strong></p>' +
+        body.text + '\n\nIf anything is wrong, just reply to this email.\n\n' +
+        signatureText(),
+      htmlContent: shell(
+        '<p style="margin:0 0 16px">Hi ' + escapeHtml(booking.name.split(' ')[0]) + ',</p>' +
+        '<p style="margin:0 0 16px">Thanks for booking an appointment with CLENCH. ' +
+        'We\'ll get back to you with available times for impression taking.</p>' +
+        '<p style="margin:0 0 12px"><strong>Here\'s what you sent us</strong></p>' +
         body.html +
-        '<p>If anything is wrong, just reply to this email.</p>' +
-        '<p>– CLENCH</p>' +
-        '</div>'
+        '<p style="margin:20px 0 0">If anything is wrong, just reply to this email.</p>'
+      )
     });
   } catch (err) {
     console.error('Customer copy failed:', err);
