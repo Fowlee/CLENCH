@@ -22,7 +22,7 @@ variables (Netlify → Site configuration → Environment variables):
 
 | Variable | Required | Default |
 | --- | --- | --- |
-| `BREVO_API_KEY` | yes | — |
+| `BREVO_APIKEY` | yes | — (`BREVO_API_KEY` also accepted) |
 | `BOOKING_TO` | no | `post@clench.no` |
 | `BOOKING_FROM` | no | `post@clench.no` |
 

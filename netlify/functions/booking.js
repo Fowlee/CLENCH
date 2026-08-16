@@ -112,9 +112,10 @@ exports.handler = async event => {
     return json(405, { error: 'Method not allowed' });
   }
 
-  const apiKey = process.env.BREVO_API_KEY;
+  // Netlify holds it as BREVO_APIKEY; accept the conventional spelling too
+  const apiKey = process.env.BREVO_APIKEY || process.env.BREVO_API_KEY;
   if (!apiKey) {
-    console.error('BREVO_API_KEY is not set');
+    console.error('BREVO_APIKEY is not set');
     return json(500, { error: 'Email is not configured yet.' });
   }
 
