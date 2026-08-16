@@ -91,23 +91,6 @@ function sendEmail(apiKey, payload) {
 }
 
 exports.handler = async event => {
-  // TEMPORARY diagnostic — remove once mail is working. Reports which of our
-  // variables the function can actually see. Names and lengths only, no values.
-  if (event.httpMethod === 'GET' && event.queryStringParameters &&
-      event.queryStringParameters.debug === 'env') {
-    const seen = Object.keys(process.env)
-      .filter(key => /BREVO|BOOKING/i.test(key))
-      .map(key => key + ' (' + String(process.env[key]).length + ' chars)');
-
-    return json(200, {
-      matching: seen,
-      totalEnvVars: Object.keys(process.env).length,
-      context: process.env.CONTEXT || null,
-      branch: process.env.BRANCH || null,
-      siteName: process.env.SITE_NAME || null
-    });
-  }
-
   if (event.httpMethod !== 'POST') {
     return json(405, { error: 'Method not allowed' });
   }
