@@ -26,7 +26,7 @@ const MAX_LENGTH = 2000;
  */
 const SITE_URL = 'https://clench.no';
 const LOGO_URL = SITE_URL + '/images/clench-email-logo.png';
-const TAGLINE = 'Custom-fit mouthguards, made in Norway';
+const TAGLINE = 'Custom-fit mouthguards';
 const RED = '#ff2a39';
 
 // Lines of the signature. Add a phone number or Instagram link here.

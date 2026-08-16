@@ -11,7 +11,7 @@
  */
 const BOOKING_ENDPOINT = '/.netlify/functions/booking';
 
-const CLENCH_EMAIL = 'seb@clench.no';
+const CLENCH_EMAIL = 'post@clench.no';
 
 function initOrderForm() {
   const form = document.getElementById('order-form');
