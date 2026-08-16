@@ -111,9 +111,13 @@ function shell(inner) {
       '<table role="presentation" width="600" cellpadding="0" cellspacing="0" ' +
              'style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden">' +
 
+        // If the reader blocks images, the styled alt text still reads as the
+        // wordmark — white on the black bar, rather than invisible black on black.
         '<tr><td align="center" style="background:#000000;padding:28px 24px">' +
           '<img src="' + LOGO_URL + '" width="180" alt="CLENCH" ' +
-               'style="display:block;border:0;width:180px;height:auto">' +
+               'style="display:block;border:0;width:180px;height:auto;' +
+               'color:#ffffff;font-family:Arial,Helvetica,sans-serif;' +
+               'font-size:26px;font-weight:bold;letter-spacing:0.06em">' +
         '</td></tr>' +
 
         '<tr><td style="padding:32px 32px 8px;font-family:Arial,Helvetica,sans-serif;' +
