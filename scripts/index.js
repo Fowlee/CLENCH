@@ -49,6 +49,24 @@ function loadHeader() {
     });
 }
 
+function loadFooter() {
+  const placeholder = document.getElementById('footer-placeholder');
+  if (!placeholder) return;
+
+  fetch('footer.html')
+    .then(res => res.text())
+    .then(html => {
+      placeholder.innerHTML = html;
+
+      // Keep the copyright year current without touching the markup
+      const year = document.getElementById('footer-year');
+      if (year) year.textContent = new Date().getFullYear();
+    })
+    .catch(err => {
+      console.error('Failed to load footer:', err);
+    });
+}
+
 function initBanner() {
   const track = document.getElementById('banner-track');
   if (!track) return;
@@ -100,7 +118,7 @@ function initBanner() {
 const GALLERY_IMAGES = [
   'img-3792.webp', 'img-4336.webp', 'img-4742.webp', 'img-3912.webp',
   'img-4778.webp', 'img-4165.webp', 'img-4537.webp', 'img-3787.webp',
-  'img-4748.webp', 'img-3798.webp', 'img-4338.webp', 'img-3923.webp',
+  'img-4748.webp', 'img-3798.webp', 'img-4338.webp',
   'img-4781.webp', 'img-4626.webp', 'img-4167.webp', 'img-4539.webp',
   'img-3797.webp', 'img-3919.webp', 'img-3794.webp', 'b0000fad-d31c-4220-a5a0-f7ef185be45d.webp'
 ];
@@ -191,6 +209,7 @@ function initGallery() {
 // with defer this runs after HTML is parsed
 document.addEventListener('DOMContentLoaded', () => {
   loadHeader();
+  loadFooter();
   initBanner();
   initGallery();
 });

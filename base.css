@@ -178,7 +178,7 @@ h1, h2, h3, .logo {
 }
 
 .black-bar {
-  height: 80px;
+  height: 90px;
   width: 100%;
   background-color: #000000;
   box-shadow: 0 4px 16px rgba(0,0,0,0.4);
@@ -186,7 +186,6 @@ h1, h2, h3, .logo {
 
 #about {
   text-align: center;
-
   padding-left : 3rem;
   padding-right : 3rem;
   padding-bottom: 3rem;
@@ -671,8 +670,196 @@ h1, h2, h3, .logo {
   margin-bottom: 2rem;
 }
 
+/* ----- ORDER FORM ----- */
+
+.order-form {
+  display: grid;
+  gap: 1.25rem;
+  margin-top: 2rem;
+}
+
+.order-form-trap {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+.form-field {
+  display: grid;
+  gap: 0.4rem;
+  align-content: start;
+  scroll-margin-top: 110px; /* clears the fixed header when a field is focused */
+}
+
+.form-field label {
+  font-family: "PoppinsBold", sans-serif;
+  font-size: 0.95rem;
+}
+
+.form-field .req {
+  color: #ff2a39;
+}
+
+.form-field .opt {
+  font-family: "PoppinsMedium", sans-serif;
+  font-weight: 400;
+  color: #777;
+}
+
+.order-form input[type="text"],
+.order-form input[type="email"],
+.order-form input[type="tel"],
+.order-form select,
+.order-form textarea {
+  font-family: inherit;
+  font-size: 1rem;
+  color: #111;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  background: #f7f7f7;
+  border: 1px solid #e2e2e2;
+  border-radius: 12px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.order-form textarea {
+  resize: vertical;
+  min-height: 3.5rem;
+}
+
+.order-form select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='%23555' d='M1 1.5 6 6.5l5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 12px;
+  padding-right: 2.5rem;
+  cursor: pointer;
+}
+
+.order-form input:focus,
+.order-form select:focus,
+.order-form textarea:focus {
+  outline: none;
+  background: #ffffff;
+  border-color: #ff2a39;
+  box-shadow: 0 0 0 3px rgba(255, 42, 57, 0.15);
+}
+
+.order-form input.has-error,
+.order-form select.has-error,
+.order-form textarea.has-error {
+  border-color: #ff2a39;
+  background: #fff5f5;
+}
+
+.field-error {
+  margin: 0;
+  min-height: 0;
+  font-size: 0.85rem;
+  color: #ff2a39;
+}
+
+.field-error:empty {
+  display: none;
+}
+
+.form-fieldset {
+  border: 1px solid #e2e2e2;
+  border-radius: 12px;
+  padding: 1rem 1.1rem 1.1rem;
+  margin: 0;
+  gap: 0.6rem;
+}
+
+.form-fieldset legend {
+  font-family: "PoppinsBold", sans-serif;
+  font-size: 0.95rem;
+  padding: 0 0.4rem;
+}
+
+.order-form .choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  font-family: "PoppinsMedium", sans-serif;
+  font-weight: 400;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.order-form .choice input {
+  flex: none;
+  width: 1.05rem;
+  height: 1.05rem;
+  margin: 0.1rem 0 0;
+  accent-color: #ff2a39;
+  cursor: pointer;
+}
+
+.order-form .order-button {
+  border: none;
+  font-family: "PoppinsBold", sans-serif;
+  font-size: 1rem;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+}
+
+.order-form .order-button:disabled {
+  background: #999;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.order-note {
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.form-status {
+  margin: 0;
+  text-align: center;
+  line-height: 1.5;
+}
+
+.form-status:empty {
+  display: none;
+}
+
+.form-status.is-error {
+  color: #ff2a39;
+}
+
+.form-status.is-success {
+  padding: 1rem;
+  background: #f2fbf4;
+  border: 1px solid #b9e6c4;
+  border-radius: 12px;
+  color: #1c6b32;
+}
+
+.order-fallback {
+  margin-top: 2rem;
+  text-align: center;
+}
+
+.order-fallback a {
+  color: #ff2a39;
+}
+
 .faq {
   margin-top: 3rem;
+  scroll-margin-top: 110px; /* clears the fixed header when linked to as #faq */
 }
 
 .faq h2 {
@@ -1099,5 +1286,145 @@ h1, h2, h3, .logo {
 
   .order-list {
     padding-left: 1.25rem;
+  }
+
+  /* ORDER FORM: two columns -> one */
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .order-price {
+    text-align: center;
+  }
+
+  .order-form {
+    text-align: left;
+  }
+
+  .order-form .order-button {
+    width: 100%;
+  }
+
+  /* 16px keeps iOS from zooming in on focus */
+  .order-form input,
+  .order-form select,
+  .order-form textarea {
+    font-size: 1rem;
+  }
+}
+
+/* ===== SITE FOOTER (shared, injected from footer.html) ===== */
+
+.site-footer {
+  background: #000000;
+  color: #ffffff;
+  padding: 3.5rem 3rem 0;
+}
+
+.footer-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 2.5rem;
+  padding-bottom: 2.5rem;
+}
+
+.footer-logo {
+  width: 160px;
+  height: auto;
+  margin-bottom: 1rem;
+}
+
+.footer-brand p {
+  margin: 0;
+  max-width: 34ch;
+  line-height: 1.6;
+  color: #b5b5b5;
+  font-size: 0.95rem;
+}
+
+.footer-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.footer-col h2 {
+  margin: 0 0 0.3rem;
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ffffff;
+}
+
+.footer-col a,
+.footer-social a {
+  color: #b5b5b5;
+  text-decoration: none;
+  font-size: 0.95rem;
+  width: fit-content;
+  border-bottom: 1px solid transparent;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.footer-col a:hover,
+.footer-social a:hover,
+.footer-col a:focus-visible {
+  color: #ffffff;
+  border-color: #ff2a39;
+}
+
+.footer-social {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.4rem;
+}
+
+.footer-bottom {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.25rem 0 1.5rem;
+  border-top: 1px solid #262626;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.footer-bottom p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #7d7d7d;
+}
+
+@media (max-width: 768px) {
+  .site-footer {
+    padding: 2.5rem 1.5rem 0;
+    text-align: center;
+  }
+
+  .footer-inner {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    padding-bottom: 2rem;
+  }
+
+  .footer-brand p {
+    max-width: 100%;
+  }
+
+  .footer-col {
+    align-items: center;
+  }
+
+  .footer-logo {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .footer-bottom {
+    justify-content: center;
+    text-align: center;
   }
 }

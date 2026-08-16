@@ -1,0 +1,4 @@
+# Plain HTML/CSS/JS — the repo root is the site, nothing to build.
+[build]
+  publish = "."
+  functions = "netlify/functions"

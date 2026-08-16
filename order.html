@@ -21,31 +21,129 @@
 
       <p class="order-intro">
         We don’t run a web shop. Every CLENCH mouthguard is custom-made and fitted to your teeth.
-        To place an order, book an appointment for impression taking.
+        To place an order, fill in the form below to book an appointment for impression taking.
+        We’ll reply with available times, and you’ll get a copy of your request by email.
       </p>
 
-      <div class="order-cta">
-        <a class="order-button"
-           href="mailto:post@clench.no?subject=Booking%20av%20avtrykk%20–%20CLENCH">
-          SEND EMAIL TO BOOK APPOINTMENT
-        </a>
-        <p class="order-price">Price: 2900 NOK</p>
-      </div>
+      <p class="order-price">Price: 2900 NOK</p>
 
-      <p class="order-note">
-        In the email, please include:
-      </p>
+      <form class="order-form" id="order-form" novalidate>
 
-      <p class="order-text">
-        Your name<br>
-        Sport<br>
-        Club / team (optional)<br>
-        Preferred design or colors
+        <!-- Bots fill this in, humans never see it -->
+        <div class="order-form-trap" aria-hidden="true">
+          <label for="company">Company</label>
+          <input type="text" id="company" name="company" tabindex="-1" autocomplete="off">
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label for="name">Full name <span class="req">*</span></label>
+            <input type="text" id="name" name="name" autocomplete="name" required>
+            <p class="field-error" data-error-for="name"></p>
+          </div>
+
+          <div class="form-field">
+            <label for="email">Email <span class="req">*</span></label>
+            <input type="email" id="email" name="email" autocomplete="email" required>
+            <p class="field-error" data-error-for="email"></p>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label for="phone">Phone <span class="req">*</span></label>
+            <input type="tel" id="phone" name="phone" autocomplete="tel" required>
+            <p class="field-error" data-error-for="phone"></p>
+          </div>
+
+          <div class="form-field">
+            <label for="sport">Sport <span class="req">*</span></label>
+            <select id="sport" name="sport" required>
+              <option value="">Choose sport…</option>
+              <option>MMA</option>
+              <option>Boxing / Kickboxing</option>
+              <option>BJJ / Wrestling</option>
+              <option>Ice hockey</option>
+              <option>Rugby</option>
+              <option>Lacrosse</option>
+              <option>Football</option>
+              <option>Basketball</option>
+              <option>Other / general athletics</option>
+            </select>
+            <p class="field-error" data-error-for="sport"></p>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label for="club">Club / team <span class="opt">(optional)</span></label>
+            <input type="text" id="club" name="club" autocomplete="organization">
+          </div>
+
+          <div class="form-field">
+            <label for="availability">Preferred days / times <span class="opt">(optional)</span></label>
+            <input type="text" id="availability" name="availability" placeholder="e.g. weekday evenings">
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label for="design">Preferred design or colors <span class="req">*</span></label>
+          <textarea id="design" name="design" rows="3"
+                    placeholder="Colors, flag, logo, text on the guard…" required></textarea>
+          <p class="field-error" data-error-for="design"></p>
+        </div>
+
+        <fieldset class="form-field form-fieldset">
+          <legend>Do you already have a dental impression or 3D scan?</legend>
+          <label class="choice">
+            <input type="radio" name="records" value="No – I need an impression appointment" checked>
+            <span>No – I need an impression appointment</span>
+          </label>
+          <label class="choice">
+            <input type="radio" name="records" value="Yes – digital scan (3Shape / .stl)">
+            <span>Yes – digital scan (3Shape / .stl)</span>
+          </label>
+          <label class="choice">
+            <input type="radio" name="records" value="Yes – stone or 3D printed model">
+            <span>Yes – stone or 3D printed model</span>
+          </label>
+          <label class="choice">
+            <input type="checkbox" name="braces" value="Yes">
+            <span>I wear braces or am in orthodontic treatment</span>
+          </label>
+        </fieldset>
+
+        <div class="form-field">
+          <label for="message">Anything else? <span class="opt">(optional)</span></label>
+          <textarea id="message" name="message" rows="4"></textarea>
+        </div>
+
+        <div class="form-field">
+          <label class="choice">
+            <input type="checkbox" id="consent" name="consent" required>
+            <span>I agree that CLENCH may store my details and dental records to produce my mouthguard. <span class="req">*</span></span>
+          </label>
+          <p class="field-error" data-error-for="consent"></p>
+        </div>
+
+        <div class="order-cta">
+          <button type="submit" class="order-button" id="order-submit">BOOK APPOINTMENT</button>
+          <p class="order-note">
+            You’ll receive a copy of this request at the email address you enter.
+          </p>
+        </div>
+
+        <p class="form-status" id="form-status" role="status" aria-live="polite"></p>
+      </form>
+
+      <p class="order-note order-fallback">
+        Prefer plain email? Write to
+        <a href="mailto:post@clench.no?subject=Booking%20av%20avtrykk%20–%20CLENCH">post@clench.no</a>.
       </p>
 
     </section>
 
-    <section class="faq">
+    <section class="faq" id="faq">
   <h2>FAQ</h2>
 
   <details class="faq-item">
@@ -134,6 +232,9 @@
 </section>
   </main>
 
+  <div id="footer-placeholder"></div>
+
   <script src="scripts/index.js" defer></script>
+  <script src="scripts/orderForm.js" defer></script>
 </body>
 </html>
