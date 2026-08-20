@@ -8,8 +8,13 @@
  * If the request fails (function down, offline, local file://) the form
  * falls back to opening the visitor's mail app with everything pre-written,
  * so a booking is never simply lost.
+ *
+ * The design itself is made on designer.html and handed over through
+ * designStore.js. Every order carries one, so this page shows the missing-design
+ * panel instead of the form if it can't find it.
  */
 const BOOKING_ENDPOINT = '/.netlify/functions/booking';
+const TICKET_ENDPOINT = '/.netlify/functions/ticket';
 
 const CLENCH_EMAIL = 'post@clench.no';
 
@@ -19,6 +24,44 @@ function initOrderForm() {
 
   const submit = document.getElementById('order-submit');
   const status = document.getElementById('form-status');
+
+  // Set once the design is loaded; the form only appears after that.
+  let design = null;
+
+  /* Proof this booking came from a browser that loaded the page, fetched when
+   * the form appears and sent back with the submission. The booking endpoint
+   * sends mail from a verified clench.no address, so without this it would send
+   * whatever a script asked it to, wherever the script wanted. */
+  let bookingTicket = null;
+
+  fetch(TICKET_ENDPOINT)
+    .then(response => response.json())
+    .then(data => { bookingTicket = data.ticket || null; })
+    .catch(err => console.error('Could not get a booking ticket:', err));
+
+  /* Nothing on this page makes sense without a design, so the form stays hidden
+   * until one is found. Somebody who bookmarked order.html gets a way forward
+   * rather than a form that would fail on submit. */
+  window.ClenchDesign.load().then(saved => {
+    const preview = document.getElementById('order-design');
+    const missing = document.getElementById('order-missing');
+    const loading = document.getElementById('order-loading');
+
+    if (loading) loading.hidden = true;
+
+    if (!saved) {
+      if (missing) missing.hidden = false;
+      return;
+    }
+
+    design = saved;
+    form.hidden = false;
+
+    if (preview && saved.thumb) {
+      document.getElementById('order-design-thumb').src = saved.thumb;
+      preview.hidden = false;
+    }
+  });
 
   function setStatus(message, kind) {
     status.textContent = message;
@@ -121,11 +164,16 @@ function initOrderForm() {
       sport: get('sport'),
       club: get('club') || '—',
       availability: get('availability') || '—',
-      design: get('design'),
+      notes: get('notes') || '—',
       records: get('records'),
       braces: data.get('braces') ? 'Yes' : 'No',
       message: get('message') || '—',
-      company: get('company')
+      company: get('company'),
+
+      /* Sent as plain booleans. The server keeps its own copy of the wording
+         and records that, so what was agreed can't be rewritten from here. */
+      consent: form.elements.consent.checked,
+      healthConsent: form.elements.healthConsent.checked
     };
   }
 
@@ -137,10 +185,13 @@ function initOrderForm() {
       'Sport: ' + booking.sport,
       'Club / team: ' + booking.club,
       'Preferred days / times: ' + booking.availability,
-      'Preferred design or colors: ' + booking.design,
+      'Design notes: ' + booking.notes,
       'Existing impression / scan: ' + booking.records,
       'Braces: ' + booking.braces,
-      'Message: ' + booking.message
+      'Message: ' + booking.message,
+      '',
+      'I agree to CLENCH storing my contact details, and what I have said about',
+      'my teeth and any orthodontic treatment, to produce my mouthguard.'
     ].join('\n');
   }
 
@@ -155,7 +206,8 @@ function initOrderForm() {
       '&body=' + encodeURIComponent(body);
 
     setStatus('We couldn\'t send this from the website, so your email app is opening ' +
-      'with the booking ready to send. Send it and we\'ll get back to you with available times.',
+      'with the booking ready to send. Your design can\'t travel by email, so send ' +
+      'that message and we\'ll reply — your design is still saved in this browser.',
       'success');
   }
 
@@ -167,6 +219,11 @@ function initOrderForm() {
 
     if (!validateForm()) return;
 
+    if (!design) {
+      setStatus('We lost your design somewhere. Please design your guard again.', 'error');
+      return;
+    }
+
     const booking = collect();
     const firstName = booking.name.split(' ')[0];
 
@@ -177,13 +234,19 @@ function initOrderForm() {
     fetch(BOOKING_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(booking)
+      // The design is the reason there's an order at all, so it travels with it
+      body: JSON.stringify(Object.assign({}, booking, { design, ticket: bookingTicket }))
     })
       .then(res => res.json().then(data => ({ ok: res.ok, data })))
       .then(({ ok, data }) => {
-        if (!ok) throw new Error(data.error || 'Request failed');
+        if (!ok) {
+          const refused = new Error(data.error || 'We couldn\'t send that booking.');
+          refused.fromServer = true;
+          throw refused;
+        }
 
         form.reset();
+        window.ClenchDesign.clear();
         submit.textContent = 'BOOKING SENT';
         setStatus(
           data.copySent
@@ -198,7 +261,13 @@ function initOrderForm() {
         console.error('Booking failed:', err);
         submit.disabled = false;
         submit.textContent = 'BOOK APPOINTMENT';
-        mailtoFallback(booking);
+
+        /* Two very different failures. If the server answered and refused, it
+         * told us why, and the customer can act on that — opening their mail
+         * app instead would hide a fixable problem behind a vague message.
+         * The mail fallback is only for a server we never reached at all. */
+        if (err.fromServer) setStatus(err.message, 'error');
+        else mailtoFallback(booking);
       });
   });
 }

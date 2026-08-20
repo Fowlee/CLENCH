@@ -1,0 +1,590 @@
+/* ===== MOUTHGUARD DESIGNER =====
+ *
+ * Styled to match the rest of the site: Poppins, #ff2a39 red, 12px radii,
+ * #f7f7f7 surfaces. Class names are shared with designerPage.js — check there
+ * before renaming anything.
+ */
+
+:root {
+  --clench-red: #ff2a39;
+  --panel-bg: #ffffff;
+  --surface: #f7f7f7;
+  --border: #e2e2e2;
+  --ink: #111111;
+  --ink-soft: #6d6d6d;
+  --header-height: 90px;
+
+  /* Backdrop behind the design canvas. The artwork canvas itself is
+     transparent, so this is only what the customer designs against — it isn't
+     the guard's colour and never reaches the print file. */
+  --stage-bg: #cfe4f2;
+}
+
+/* Solid header rather than the floating transparent one — there's no hero
+   behind it on this page. Relative, not static: the hamburger and mobile nav
+   are absolutely positioned and need the header as their containing block,
+   or they anchor to the page and land over the 3D viewport. */
+.site-header {
+  position: relative;
+  background: #000000;
+}
+
+#header-placeholder {
+  min-height: var(--header-height); /* hold the space so nothing jumps */
+}
+
+/* ----- LAYOUT ----- */
+
+.designer-layout {
+  display: flex;
+  flex-direction: row;
+  height: calc(100vh - var(--header-height));
+}
+
+#designer {
+  flex: 1;
+  min-width: 0;
+  background: radial-gradient(circle at 50% 38%, #3a3a3a 0%, #1c1c1c 70%);
+}
+
+.toolmenu {
+  width: 360px;
+  flex-shrink: 0;
+  padding: 1.5rem 1.25rem 2.5rem;
+  background: var(--panel-bg);
+  border-left: 1px solid var(--border);
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+/* ----- TABS ----- */
+
+.tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 1.25rem;
+  background: var(--surface);
+  border-radius: 999px;
+}
+
+.tab {
+  padding: 0.6rem 0.5rem;
+  font-family: "PoppinsBold", sans-serif;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  background: none;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.tab:hover {
+  color: var(--ink);
+}
+
+.tab.active {
+  color: #ffffff;
+  background: var(--clench-red);
+}
+
+/* ----- PANELS ----- */
+
+.panel {
+  display: none;
+}
+
+.panel.active {
+  display: block;
+}
+
+.toolmenu h2 {
+  margin: 0 0 0.9rem;
+  font-family: "PoppinsBold", sans-serif;
+  font-size: 1.05rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+/* ----- COLOUR SWATCHES ----- */
+
+.swatches {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(38px, 1fr));
+  gap: 10px;
+  padding: 0;
+}
+
+.swatch {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.swatch:hover {
+  transform: scale(1.1);
+}
+
+.swatch.selected {
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px var(--clench-red);
+}
+
+/* ----- THE DESIGN STAGE ----- */
+
+.art-stage {
+  position: relative;
+  margin-bottom: 0.6rem;
+  border-radius: 12px;
+  background:
+    /* Bump ?v= whenever the guide shape changes — browsers cache background
+       images hard, and a normal reload won't fetch a new one. */
+    url("images/print-zone.svg?v=3") center / 100% 100% no-repeat,
+    var(--stage-bg);
+}
+
+/* Fabric wraps the canvas in its own div — keep both to the stage width. */
+.art-stage .canvas-container,
+.art-stage canvas {
+  max-width: 100%;
+  border-radius: 12px;
+}
+
+.art-hint {
+  margin: 0 0 1.25rem;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+
+/* ----- CONTROLS ----- */
+
+.art-controls {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.art-controls input[type="text"] {
+  width: 100%;
+  padding: 0.75rem 0.9rem;
+  font-family: inherit;
+  font-size: 1rem;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.art-controls input[type="text"]:focus {
+  outline: none;
+  background: #ffffff;
+  border-color: var(--clench-red);
+  box-shadow: 0 0 0 3px rgba(255, 42, 57, 0.15);
+}
+
+.art-controls button,
+.art-upload {
+  padding: 0.8rem 1rem;
+  font-family: "PoppinsBold", sans-serif;
+  font-size: 0.9rem;
+  letter-spacing: 0.03em;
+  color: #ffffff;
+  background: var(--clench-red);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s ease;
+}
+
+.art-controls button:hover,
+.art-upload:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+}
+
+.art-controls button.art-secondary {
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.art-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.85rem;
+  color: var(--ink);
+}
+
+.art-field input[type="range"] {
+  flex: 1;
+  accent-color: var(--clench-red);
+}
+
+.art-field input[type="color"] {
+  width: 46px;
+  height: 30px;
+  padding: 0;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* Font picker: label above the control rather than beside it, so long font
+   names aren't squeezed into the narrow tool panel. */
+.art-field-block {
+  display: block;
+}
+
+.art-field-block > span {
+  display: block;
+  margin-bottom: 5px;
+  font-family: "PoppinsBold", sans-serif;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+/* ----- FONT PICKER -----
+   A custom dropdown, because native <option> elements ignore font-family in
+   the popup — the whole point here is previewing each font. */
+
+.font-picker {
+  position: relative;
+}
+
+.art-controls .font-picker-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  font-family: inherit;
+  font-size: 1.05rem;
+  line-height: 1.3;
+  letter-spacing: normal;
+  text-align: left;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.art-controls .font-picker-button:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: #cfcfcf;
+}
+
+.font-picker-caret {
+  font-size: 0.7rem;
+  color: var(--ink-soft);
+}
+
+.font-picker-list {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: 360px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.22);
+}
+
+.font-picker-option {
+  padding: 0.55rem 0.7rem;
+  font-size: 1.2rem;
+  line-height: 1.25;
+  color: var(--ink);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.font-picker-option:hover {
+  background: var(--surface);
+}
+
+.font-picker-option[aria-selected="true"] {
+  background: #fff1f3;
+  box-shadow: inset 0 0 0 1px var(--clench-red);
+}
+
+/* ----- IMAGE TOOL -----
+   The real file input is hidden and the label acts as the button, because file
+   inputs can't be styled consistently across browsers. */
+
+.art-upload {
+  display: block;
+  text-align: center;
+}
+
+#image-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+#image-input:focus-visible + .art-upload,
+.art-upload:focus-visible {
+  outline: 2px solid var(--clench-red);
+  outline-offset: 2px;
+}
+
+.art-status {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+
+.art-status:empty {
+  display: none;
+}
+
+.art-status.is-error {
+  color: var(--clench-red);
+}
+
+/* ----- PHONE -----
+   Stack the viewport above the tools and let the page scroll, rather than
+   squeezing a 360px panel alongside the model. */
+
+@media (max-width: 768px) {
+  :root {
+    --header-height: 64px;   /* base.css shrinks the header at this breakpoint */
+  }
+
+  .designer-layout {
+    flex-direction: column;
+    height: auto;
+  }
+
+  #designer {
+    flex: none;
+    height: 52vh;
+    min-height: 240px;
+  }
+
+  .toolmenu {
+    width: 100%;
+    padding: 1.25rem 1.25rem 3rem;
+    border-left: none;
+    border-top: 1px solid var(--border);
+    overflow-y: visible;
+  }
+
+  /* 16px keeps iOS from zooming in when a field takes focus. */
+  .art-controls input[type="text"],
+  .art-controls .font-picker-button {
+    font-size: 16px;
+  }
+
+  /* Comfortable touch targets. */
+  .tab {
+    padding: 0.7rem 0.5rem;
+  }
+
+  .art-controls button,
+  .art-upload {
+    padding: 0.9rem 1rem;
+  }
+
+  .swatches {
+    grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+  }
+
+  .font-picker-option {
+    padding: 0.7rem;
+  }
+}
+
+/* ----- CONTINUE TO BOOKING -----
+ *
+ * The end of the design step. Sits under the tool panels, so it's reachable
+ * whichever tool is open.
+ */
+
+.design-continue {
+  margin-top: 1.75rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.design-continue-button {
+  width: 100%;
+  padding: 0.95rem 1rem;
+  border: none;
+  border-radius: 12px;
+  background: var(--clench-red);
+  color: #ffffff;
+  font-family: "PoppinsBold", sans-serif;
+  font-size: 0.95rem;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.design-continue-button:hover {
+  background: #e01f2d;
+}
+
+.design-continue-button:active {
+  transform: translateY(1px);
+}
+
+.design-continue-button:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.design-continue-button:disabled {
+  background: var(--ink-soft);
+  cursor: default;
+}
+
+.design-continue-status {
+  margin: 0.6rem 0 0;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  min-height: 1.2em;
+}
+
+.design-continue-status.is-error {
+  color: var(--clench-red);
+}
+
+/* ----- VIEW MODE -----
+ *
+ * designer.html?d=<token> — the link in the customer's confirmation email.
+ * The tools disappear and the guard gets the whole page: this is a record of
+ * what was ordered, not a second chance to edit it.
+ */
+
+.design-view {
+  display: none;
+}
+
+body.is-viewing .design-view {
+  display: block;
+  padding: 2rem 1.5rem 1.25rem;
+  text-align: center;
+}
+
+body.is-viewing .design-view h1 {
+  margin: 0 0 0.35rem;
+  font-family: "PoppinsBold", sans-serif;
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  letter-spacing: 0.02em;
+  color: var(--ink);
+}
+
+body.is-viewing .design-view p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+}
+
+body.is-viewing .toolmenu {
+  display: none;
+}
+
+/* The heading takes its own space above, so the viewport can't also claim a
+   full screen height without pushing the page into a scroll. */
+body.is-viewing .designer-layout {
+  height: auto;
+}
+
+body.is-viewing #designer {
+  height: min(70vh, 620px);
+}
+
+/* ----- LAYERING -----
+ *
+ * Sits under the canvas, outside the tool panels, because stacking order is a
+ * property of the whole design rather than of one tool.
+ */
+
+.art-layers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0 0 1.25rem;
+}
+
+.art-layer-button {
+  flex: 1 1 auto;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel-bg);
+  color: var(--ink);
+  font-family: "PoppinsMedium", sans-serif;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+
+  /* Comfortably hittable with a thumb — the reason this row exists is that
+     small targets are the main thing that fails on a phone. */
+  min-height: 44px;
+}
+
+.art-layer-button:hover:not(:disabled) {
+  border-color: var(--ink);
+}
+
+.art-layer-button:focus-visible {
+  outline: 3px solid var(--clench-red);
+  outline-offset: 2px;
+}
+
+.art-layer-button.is-remove:hover:not(:disabled) {
+  border-color: var(--clench-red);
+  color: var(--clench-red);
+}
+
+/* Nothing selected: still visible, so the controls don't appear and vanish,
+   but clearly not available. */
+.art-layer-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* Shown in place of the guard when the browser has no WebGL. The design tools
+   below carry on working, so this explains rather than apologises. */
+.designer-no-3d {
+  margin: 0;
+  padding: 2rem 1.5rem;
+  max-width: 34ch;
+  color: #d8d8d8;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  text-align: center;
+}
+
+#designer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

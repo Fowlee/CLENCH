@@ -1452,3 +1452,148 @@ h1, h2, h3, .logo {
     text-align: center;
   }
 }
+
+/* ----- THE DESIGN, ON THE ORDER PAGE -----
+ *
+ * Made on designer.html and carried over by scripts/designStore.js. Shown at
+ * the top of the booking form so the customer can see what they're ordering
+ * while they fill it in.
+ */
+
+.order-design {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin: 2rem 0 2.5rem;
+  padding: 1.25rem;
+  background: #f7f7f7;
+  border: 1px solid #e2e2e2;
+  border-radius: 12px;
+}
+
+/* The thumbnail is rendered against the designer's dark backdrop, so it keeps
+   a dark tile here rather than floating on the grey. */
+.order-design-thumb {
+  width: 190px;
+  max-width: 40%;
+  height: auto;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: #1c1c1c;
+}
+
+.order-design-body h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.2rem;
+  letter-spacing: 0.03em;
+}
+
+.order-design-body p {
+  margin: 0 0 0.75rem;
+  color: #555;
+  line-height: 1.5;
+}
+
+.order-design-edit {
+  color: #ff2a39;
+  font-weight: 700;
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  transition: border-color 0.2s ease;
+}
+
+.order-design-edit:hover {
+  border-bottom-color: #ff2a39;
+}
+
+/* Stands in for the whole form when there's no design to order. */
+.order-missing {
+  margin: 2rem 0;
+  padding: 2.5rem 2rem;
+  background: #f7f7f7;
+  border: 1px solid #e2e2e2;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.order-missing h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.5rem;
+}
+
+.order-missing p {
+  margin: 0 auto 1.75rem;
+  max-width: 46ch;
+  line-height: 1.6;
+  color: #555;
+}
+
+@media (max-width: 640px) {
+  .order-design {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .order-design-thumb {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+/* Placeholder while the design is read out of browser storage. */
+.order-loading {
+  margin: 2rem 0;
+  padding: 2rem;
+  background: #f7f7f7;
+  border: 1px solid #e2e2e2;
+  border-radius: 12px;
+  text-align: center;
+  color: #555;
+}
+
+
+/* Both pages show and hide sections with the `hidden` attribute. The browser's
+ * default for it is display:none, but that is the weakest possible rule — any
+ * author `display` here beats it, and the element stays on screen forever. This
+ * puts it back. Without it, .signin (grid) and .order-design (flex) can never
+ * be hidden. */
+[hidden] { display: none !important; }
+
+/* ----- PRIVACY NOTICE ----- */
+
+.privacy-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0 2rem;
+  font-size: 0.95rem;
+}
+
+.privacy-table th,
+.privacy-table td {
+  text-align: left;
+  padding: 0.7rem 0.9rem;
+  border-bottom: 1px solid #e2e2e2;
+  vertical-align: top;
+}
+
+.privacy-table th {
+  font-family: "PoppinsBold", sans-serif;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #555;
+  background: #f7f7f7;
+}
+
+.privacy-list {
+  margin: 0 0 1.5rem;
+  padding-left: 1.2rem;
+  line-height: 1.65;
+}
+
+.privacy-list li { margin-bottom: 0.5rem; }
+
+.order-section h2 {
+  margin: 2.2rem 0 0.6rem;
+  font-size: 1.35rem;
+}
