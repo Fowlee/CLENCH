@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 357" preserveAspectRatio="none">
+  <!-- The printable front of the guard, with the V-notch at its midline. Spans
+       almost the full canvas because FRONT_FACING_MIN in mouthguardDesigner.js
+       wraps artwork around the curve until the geometry runs out — roughly 99%
+       of the width is usable surface. -->
+  <path d="M48 4
+           H392
+           C444 4 474 28 512 88
+           C550 28 580 4 632 4
+           H976
+           A28 28 0 0 1 1004 32
+           V325
+           A28 28 0 0 1 976 353
+           H48
+           A28 28 0 0 1 20 325
+           V32
+           A28 28 0 0 1 48 4
+           Z"
+        fill="#ffffff" fill-opacity="0.07" stroke="#8a8a8a" stroke-width="3" stroke-dasharray="10 8"/>
+</svg>

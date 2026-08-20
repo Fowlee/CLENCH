@@ -21,13 +21,40 @@
 
       <p class="order-intro">
         We don’t run a web shop. Every CLENCH mouthguard is custom-made and fitted to your teeth.
-        To place an order, fill in the form below to book an appointment for impression taking.
+        You’ve designed yours — now book an appointment for impression taking so we can fit it.
         We’ll reply with available times, and you’ll get a copy of your request by email.
       </p>
 
       <p class="order-price">Price: 2900 NOK</p>
 
-      <form class="order-form" id="order-form" novalidate>
+      <!-- Reading the design can take a moment on a slow device, and on a
+           browser that blocks storage it takes until the timeout. Something has
+           to be on screen in the meantime. -->
+      <p class="order-loading" id="order-loading">Loading your design…</p>
+
+      <!-- Filled in by orderForm.js from the design handed over by the designer.
+           If there isn't one, the missing-design panel below takes over. -->
+      <div class="order-design" id="order-design" hidden>
+        <img class="order-design-thumb" id="order-design-thumb" alt="The mouthguard you designed">
+        <div class="order-design-body">
+          <h2>Your design</h2>
+          <p>This is the guard we'll make for you. You can still change it.</p>
+          <a class="order-design-edit" href="designer.html">Change the design</a>
+        </div>
+      </div>
+
+      <!-- Shown instead of the form when somebody lands here without designing
+           first — a bookmarked link, or a browser that lost the handoff. -->
+      <div class="order-missing" id="order-missing" hidden>
+        <h2>Design your mouthguard first</h2>
+        <p>
+          Every CLENCH guard is made to a design you choose, so the booking form
+          opens once you've made one. It takes a minute.
+        </p>
+        <a class="order-button" href="designer.html">DESIGN YOUR MOUTHGUARD</a>
+      </div>
+
+      <form class="order-form" id="order-form" novalidate hidden>
 
         <!-- Bots fill this in, humans never see it -->
         <div class="order-form-trap" aria-hidden="true">
@@ -87,10 +114,9 @@
         </div>
 
         <div class="form-field">
-          <label for="design">Preferred design or colors <span class="req">*</span></label>
-          <textarea id="design" name="design" rows="3"
-                    placeholder="Colors, flag, logo, text on the guard…" required></textarea>
-          <p class="field-error" data-error-for="design"></p>
+          <label for="notes">Anything to say about your design? <span class="opt">(optional)</span></label>
+          <textarea id="notes" name="notes" rows="3"
+                    placeholder="e.g. make the logo a bit smaller, match my club's exact red…"></textarea>
         </div>
 
         <fieldset class="form-field form-fieldset">
@@ -118,12 +144,36 @@
           <textarea id="message" name="message" rows="4"></textarea>
         </div>
 
+        <!-- Two separate agreements, not one.
+             The second covers health data — what the customer tells us about
+             their teeth and any orthodontic treatment — which under GDPR
+             Article 9 needs its own explicit consent rather than being folded
+             into a general one. The wording here is mirrored in booking.js,
+             which records it; change both together.
+
+             Note we never receive a scan or an impression. Those go through the
+             clinic. The old wording promised to store "dental records", which
+             overstated what this site actually holds. -->
         <div class="form-field">
           <label class="choice">
             <input type="checkbox" id="consent" name="consent" required>
-            <span>I agree that CLENCH may store my details and dental records to produce my mouthguard. <span class="req">*</span></span>
+            <span>I agree that CLENCH may store my contact details to arrange my appointment and produce my mouthguard. <span class="req">*</span></span>
           </label>
           <p class="field-error" data-error-for="consent"></p>
+        </div>
+
+        <div class="form-field">
+          <label class="choice">
+            <input type="checkbox" id="healthConsent" name="healthConsent" required>
+            <span>I agree that CLENCH may store what I have said about my teeth and any orthodontic treatment, so my mouthguard fits safely. <span class="req">*</span></span>
+          </label>
+          <p class="field-error" data-error-for="healthConsent"></p>
+          <p class="order-note">
+            You can withdraw either agreement at any time by emailing
+            <a href="mailto:post@clench.no">post@clench.no</a>, and we'll delete
+            your details. See our <a href="privacy.html">privacy notice</a> for
+            what we keep, for how long, and who processes it.
+          </p>
         </div>
 
         <div class="order-cta">
@@ -235,6 +285,7 @@
   <div id="footer-placeholder"></div>
 
   <script src="scripts/index.js" defer></script>
+  <script src="scripts/designStore.js" defer></script>
   <script src="scripts/orderForm.js" defer></script>
 </body>
 </html>

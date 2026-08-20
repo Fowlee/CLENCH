@@ -1,2 +1,12 @@
 .DS_Store
 .claude/settings.local.json
+
+# netlify dev reads this, and it holds the Supabase service key
+.env
+.env.*
+
+# netlify CLI
+.netlify/
+
+# Built by make-deploy.sh for drag-and-drop deploys
+_deploy/

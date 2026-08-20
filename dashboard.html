@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Orders – CLENCH</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Internal tool holding customer contact details. Never in a search index. -->
+  <meta name="robots" content="noindex, nofollow">
+
+  <link rel="icon" type="image/x-icon" href="clench_r_red.svg">
+  <link rel="stylesheet" href="dashboard.css">
+
+  <!-- The faces the text tool offers, self-hosted. See designFonts.css. -->
+  <link rel="stylesheet" href="designFonts.css">
+
+  <!-- Served from this site rather than a CDN. A third-party script tag with no
+       integrity check means whoever controls that CDN can run code on this page;
+       on the dashboard that page holds every customer's contact details. It also
+       removes a transfer of visitors' IP addresses to a third country. -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "/vendor/three/three.module.js",
+      "three/addons/": "/vendor/three/addons/"
+    }
+  }
+  </script>
+</head>
+
+<body class="dashboard">
+
+  <!-- Shown until the session cookie checks out. -->
+  <section class="signin" id="signin" hidden>
+    <form class="signin-card" id="signin-form">
+      <img class="signin-logo" src="clench_r_red.svg" alt="CLENCH">
+      <h1>Orders</h1>
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" autocomplete="current-password" required>
+      <button type="submit" id="signin-submit">SIGN IN</button>
+      <p class="signin-error" id="signin-error" role="status" aria-live="polite"></p>
+    </form>
+  </section>
+
+  <!-- Everything past the gate. -->
+  <div class="app" id="app" hidden>
+
+    <header class="app-header">
+      <div class="app-title">
+        <img src="clench_r_red.svg" alt="CLENCH">
+        <span>Orders</span>
+      </div>
+      <button type="button" class="app-signout" id="signout">Sign out</button>
+    </header>
+
+    <!-- LIST VIEW -->
+    <main class="view view-list" id="view-list">
+      <div class="search">
+        <input type="search" id="search" placeholder="Search email, phone, name or reference"
+               autocomplete="off" spellcheck="false">
+        <p class="search-note" id="search-note">Most recent orders</p>
+      </div>
+
+      <ul class="orders" id="orders"></ul>
+      <p class="empty" id="empty" hidden>No orders match that.</p>
+    </main>
+
+    <!-- DETAIL VIEW -->
+    <main class="view view-detail" id="view-detail" hidden>
+      <button type="button" class="back" id="back">&larr; All orders</button>
+
+      <div class="detail">
+        <div class="detail-guard">
+          <!-- The same 3D class the customer designed on, pointed at its own
+               container. Improve the model or the lighting once, both get it. -->
+          <div class="guard-stage" id="guard-stage"></div>
+          <p class="guard-hint">Drag to turn the guard around.</p>
+        </div>
+
+        <div class="detail-side">
+          <div class="detail-head">
+            <p class="detail-ref" id="detail-ref"></p>
+            <h1 id="detail-name"></h1>
+            <p class="detail-when" id="detail-when"></p>
+          </div>
+
+          <div class="detail-actions">
+            <button type="button" class="button-primary" id="print">PRINT THE DESIGN</button>
+            <a class="button-secondary" id="customer-link" href="#" target="_blank" rel="noopener">
+              Open the customer's view
+            </a>
+          </div>
+
+          <label class="status-field">
+            <span>Status</span>
+            <select id="status">
+              <option value="new">New</option>
+              <option value="impression">Impression taken</option>
+              <option value="printed">Printed</option>
+              <option value="delivered">Delivered</option>
+            </select>
+          </label>
+          <p class="status-note" id="status-note" role="status" aria-live="polite"></p>
+
+          <dl class="detail-facts" id="detail-facts"></dl>
+
+          <!-- What a customer can ask for under GDPR: a copy of what's held
+               about them, or its removal. Kept at the bottom, away from the
+               everyday controls, because one of them is irreversible. -->
+          <div class="detail-privacy">
+            <span class="privacy-label">Data protection</span>
+            <button type="button" class="button-secondary" id="export">
+              Export this customer's data
+            </button>
+            <button type="button" class="button-danger" id="erase">
+              DELETE THIS ORDER
+            </button>
+            <p class="erase-note" id="erase-note" role="status" aria-live="polite"></p>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="vendor/fabric.min.js"></script>
+  <script type="module" src="scripts/dashboard.js"></script>
+</body>
+</html>

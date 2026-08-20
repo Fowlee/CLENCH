@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="stylesheet" href="base.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="designer.css" />
+  <link rel="icon" type="image/x-icon" href="clench_r_red.svg">
+
+  <!-- The faces the text tool offers, self-hosted. See designFonts.css. -->
+  <link rel="stylesheet" href="designFonts.css">
+  <!-- Served from this site rather than a CDN. A third-party script tag with no
+       integrity check means whoever controls that CDN can run code on this page;
+       on the dashboard that page holds every customer's contact details. It also
+       removes a transfer of visitors' IP addresses to a third country. -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "/vendor/three/three.module.js",
+      "three/addons/": "/vendor/three/addons/"
+    }
+  }
+  </script>
+</head>
+<body>
+    <div id="header-placeholder"></div>
+
+    <!-- Shown only in view mode (designer.html?d=<token>), the link in the
+         customer's confirmation email. Hidden by default. -->
+    <section class="design-view">
+      <h1 id="view-title">Loading your design…</h1>
+      <p id="view-note">One moment.</p>
+    </section>
+
+    <div class="designer-layout">
+        <div id="designer"></div>
+        <section class="toolmenu">
+          <div class="tabs">
+            <button class="tab active" data-tool="color">Color</button>
+            <button class="tab" data-tool="text">Text</button>
+            <button class="tab" data-tool="image">Image</button>
+          </div>
+
+          <!-- The guard's printable front, flattened. Fabric draws here and the
+               same canvas is fed to three.js as the model's texture. It lives
+               outside the panels so it stays visible whichever tool is open. -->
+          <div class="art-stage">
+            <canvas id="art-canvas"></canvas>
+          </div>
+          <p class="art-hint">Drag to move, corners to resize, double-click to edit text.</p>
+
+          <!-- Stacking order, for putting one thing on top of another. Outside
+               the tool panels because it applies to the whole design, whichever
+               tool is open. Disabled until something is selected. -->
+          <div class="art-layers is-idle">
+            <button type="button" id="layer-back" class="art-layer-button" disabled>
+              <span aria-hidden="true">↓</span> Send back
+            </button>
+            <button type="button" id="layer-forward" class="art-layer-button" disabled>
+              <span aria-hidden="true">↑</span> Bring forward
+            </button>
+            <button type="button" id="layer-delete" class="art-layer-button is-remove" disabled>
+              Delete
+            </button>
+          </div>
+
+          <div class="toolbar panel active" data-tool="color">
+           <h2>Choose a color</h2>
+           <div class="swatches">
+
+            
+            <div class="swatch" data-color="#ff7f00" title="orange"></div>
+            <div class="swatch" data-color="#0047ab" title="blue"></div>
+            <div class="swatch" data-color="#c8102e" title="red"></div>
+            <div class="swatch" data-color="#2e8b57" title="green"></div>
+            <div class="swatch" data-color="#c0c0c0" title="silver"></div>
+            <div class="swatch" data-color="#ff2a2a" title="neon red"></div>
+            <div class="swatch" data-color="#39ff14" title="neon green"></div>
+            <div class="swatch" data-color="#ccff00" title="neon yellow"></div>
+            <div class="swatch" data-color="#ffd700" title="yellow"></div>
+            <div class="swatch" data-color="#000000" title="black"></div>
+            <div class="swatch" data-color="#ffffff" title="white"></div>
+            <div class="swatch" data-color="#ff69b4" title="pink"></div>
+            <div class="swatch" data-color="#40e0d0" title="turquoise"></div>
+            <div class="swatch" data-color="#d4af37" title="gold"></div>
+            <div class="swatch" data-color="#1560bd" title="blue opaque"></div>
+            <div class="swatch" data-color="#6a0dad" title="purple"></div>
+            <div class="swatch" data-color="#add8e6" title="light blue"></div>
+            <div class="swatch" data-color="#5c0a1e" title="bordeaux"></div>
+        </div>
+          </div>
+          <div class="toolbar panel" data-tool="text">
+            <h2>Add text</h2>
+
+            <div class="art-controls">
+              <input type="text" id="text-input" placeholder="Your text" maxlength="24">
+
+              <!-- A custom dropdown rather than a <select>: browsers render
+                   native option lists in the system font, so a real font
+                   preview isn't possible there. Built in designerPage.js. -->
+              <div class="art-field art-field-block">
+                <span id="font-label">Font</span>
+                <div class="font-picker" id="font-picker">
+                  <button type="button" class="font-picker-button" id="font-picker-button"
+                          aria-haspopup="listbox" aria-expanded="false" aria-labelledby="font-label">
+                    <span id="font-picker-current">Poppins</span>
+                    <span class="font-picker-caret" aria-hidden="true">▾</span>
+                  </button>
+                  <ul class="font-picker-list" id="font-picker-list" role="listbox" hidden></ul>
+                </div>
+              </div>
+
+              <button type="button" id="text-add">Add to design</button>
+
+              <label class="art-field">
+                <span>Colour</span>
+                <input type="color" id="text-color" value="#ffffff">
+              </label>
+
+              <label class="art-field">
+                <span>Size</span>
+                <input type="range" id="text-size" min="20" max="160" value="80">
+              </label>
+
+              <button type="button" id="text-delete" class="art-secondary">Delete selected</button>
+            </div>
+          </div>
+          <div class="toolbar panel" data-tool="image">
+            <h2>Add image</h2>
+
+            <div class="art-controls">
+              <!-- The file input itself is hidden; the label is the button. -->
+              <label class="art-upload" for="image-input">Choose an image</label>
+              <input type="file" id="image-input" accept="image/png,image/jpeg,image/webp,image/svg+xml">
+
+              <p class="art-hint">
+                PNG, JPG, WEBP or SVG, up to 8&nbsp;MB. A logo with a transparent
+                background sits best on the guard.
+              </p>
+
+              <p class="art-status" id="image-status" role="status" aria-live="polite"></p>
+
+              <button type="button" id="image-delete" class="art-secondary">Delete selected</button>
+            </div>
+          </div>
+
+          <!-- Designing is step one of ordering, so this hands the design to the
+               booking form rather than submitting anything by itself. -->
+          <div class="design-continue">
+            <button type="button" id="design-continue" class="design-continue-button">
+              CONTINUE TO BOOKING
+            </button>
+            <p class="design-continue-status" id="design-continue-status" role="status" aria-live="polite"></p>
+            <p class="art-hint">You can change anything before you send the booking.</p>
+          </div>
+      </section>
+    </div>
+  <!-- Fabric 5 is a classic script, so it runs before the deferred module below
+       and window.fabric is ready by the time designerPage.js executes. -->
+  <script src="vendor/fabric.min.js"></script>
+
+  <!-- Carries the design to order.html. Deferred, so it runs before the module
+       below in document order and window.ClenchDesign is ready. -->
+  <script src="scripts/designStore.js" defer></script>
+
+  <script type="module" src="designerPage.js">
+  </script>
+  <script src="scripts/index.js" defer></script>
+</body>
+</html>

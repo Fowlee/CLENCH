@@ -2,3 +2,90 @@
 [build]
   publish = "."
   functions = "netlify/functions"
+
+# ----- Files that live in the repo but must not be served -----
+#
+# Because the whole repo is published, anything committed here is reachable by
+# URL unless it's turned away. These are internal: notes, the database schema,
+# and the developer readme.
+
+# Never, under any circumstances. These should not be in a deploy at all — but
+# a drag-and-drop deploy uploads the folder as it is on disk, .gitignore and
+# all, so this is the net under that mistake. Both are served with a 200 by
+# default; the secret key in .env would be enough to read every customer record.
+
+[[redirects]]
+  from = "/.env"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/.env.*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/.git/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/HANDOFF.md"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/readme.md"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/db/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+# ----- Security headers -----
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # Nothing is loaded from anywhere else any more — no CDN, no font host — so
+    # this can be strict. 'unsafe-inline' is needed for style only, because a few
+    # elements carry style attributes; no inline script is allowed anywhere.
+    #
+    # blob: worker and wasm-unsafe-eval are for the Draco decoder, which runs the
+    # mesh decompression in a worker built from a blob and compiled from wasm.
+    # Images allow the signed Supabase URLs the dashboard shows.
+    #
+    # The sha256 is the <script type="importmap"> block in designer.html and
+    # dashboard.html. An import map has to be inline — there is no external form
+    # browsers support — so it is allowed by hash rather than by opening
+    # script-src to all inline script.
+    #
+    # IF YOU EDIT THAT BLOCK, EVEN THE WHITESPACE, REGENERATE THIS HASH:
+    #   python3 -c "import re,hashlib,base64;s=open('designer.html').read();\
+    #     c=re.search(r'<script type=\"importmap\">(.*?)</script>',s,re.S).group(1);\
+    #     print('sha256-'+base64.b64encode(hashlib.sha256(c.encode()).digest()).decode())"
+    # Both pages must keep identical import maps, or add both hashes.
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-/+w8WOS1UgeNaUXd5R8/n/6enx4OOpGYzhp6sEH5SLY='; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co; font-src 'self'; connect-src 'self' https://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+
+    # Stop a browser second-guessing a file's type and running it as something else
+    X-Content-Type-Options = "nosniff"
+    # Nothing here is meant to be embedded in another site
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), interest-cohort=()"
+
+# The dashboard holds customer contact details. The page carries a noindex meta
+# tag as well; this covers the cases a crawler reads headers instead.
+[[headers]]
+  for = "/dashboard.html"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+    Cache-Control = "no-store"

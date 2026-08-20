@@ -1,0 +1,512 @@
+/* ===== ORDERS DASHBOARD =====
+ *
+ * Standalone on purpose: base.css carries the public site's .order-* rules,
+ * which would collide with the order list here. This file is the whole style
+ * for dashboard.html, fonts included.
+ *
+ * It's a tool, not a page — scanned and operated rather than read — so density
+ * and legible state matter more than atmosphere.
+ */
+
+@font-face {
+  font-family: "PoppinsBold";
+  src: url("./fonts/poppins.bold.ttf") format("truetype");
+  font-weight: 700;
+}
+
+@font-face {
+  font-family: "PoppinsMedium";
+  src: url("./fonts/poppins.medium.ttf") format("truetype");
+  font-weight: 400;
+}
+
+:root {
+  --red: #ff2a39;
+  --ink: #111111;
+  --ink-soft: #6d6d6d;
+  --page: #f4f4f5;
+  --panel: #ffffff;
+  --border: #e2e2e2;
+  --stage: #1c1c1c;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+/* Both pages show and hide sections with the `hidden` attribute. The browser's
+ * default for it is display:none, but that is the weakest possible rule — any
+ * author `display` here beats it, and the element stays on screen forever. This
+ * puts it back. Without it, .signin (grid) and .order-design (flex) can never
+ * be hidden. */
+[hidden] { display: none !important; }
+
+
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font-family: "PoppinsMedium", system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+}
+
+h1, h2 { font-family: "PoppinsBold", system-ui, sans-serif; }
+
+button, input, select { font: inherit; }
+
+:focus-visible {
+  outline: 3px solid var(--red);
+  outline-offset: 2px;
+}
+
+/* ----- SIGN IN ----- */
+
+.signin {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: #000000;
+}
+
+.signin-card {
+  width: 100%;
+  max-width: 340px;
+  padding: 2.5rem 2rem;
+  background: var(--panel);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.signin-logo {
+  width: 120px;
+  margin: 0 auto 0.5rem;
+  display: block;
+}
+
+.signin-card h1 {
+  margin: 0 0 1rem;
+  font-size: 1.35rem;
+  text-align: center;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.signin-card label {
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.signin-card input {
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fafafa;
+}
+
+.signin-card button {
+  margin-top: 0.75rem;
+  padding: 0.85rem 1rem;
+  border: none;
+  border-radius: 10px;
+  background: var(--red);
+  color: #ffffff;
+  font-family: "PoppinsBold", sans-serif;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.signin-card button:disabled { background: var(--ink-soft); cursor: default; }
+
+.signin-error {
+  margin: 0.5rem 0 0;
+  min-height: 1.2em;
+  font-size: 0.85rem;
+  color: var(--red);
+  text-align: center;
+}
+
+/* ----- FRAME ----- */
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1.5rem;
+  background: #000000;
+  color: #ffffff;
+}
+
+.app-title {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  font-family: "PoppinsBold", sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+}
+
+.app-title img { height: 30px; width: auto; display: block; }
+
+.app-signout {
+  background: none;
+  border: 1px solid #444444;
+  border-radius: 8px;
+  padding: 0.45rem 0.9rem;
+  color: #ffffff;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.app-signout:hover { border-color: #ffffff; }
+
+.view {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+/* ----- SEARCH ----- */
+
+.search { margin-bottom: 1.5rem; }
+
+.search input {
+  width: 100%;
+  padding: 0.9rem 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+}
+
+.search input::placeholder { color: #a0a0a0; }
+
+.search-note {
+  margin: 0.6rem 0 0;
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+/* ----- ORDER LIST ----- */
+
+.orders {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.order-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 96px 1fr auto;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 0.9rem 1.1rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.order-row:hover {
+  border-color: var(--ink);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.07);
+}
+
+/* The thumbnail is rendered on the designer's dark backdrop, so it keeps one */
+.order-thumb {
+  width: 96px;
+  height: 54px;
+  object-fit: cover;
+  border-radius: 8px;
+  background: var(--stage);
+}
+
+.order-body { min-width: 0; }
+
+.order-body p {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.order-name {
+  font-family: "PoppinsBold", sans-serif;
+  font-size: 1rem;
+}
+
+.order-contact, .order-sport {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.order-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.4rem;
+}
+
+.order-when {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* State reads as shape and colour, not just words, so the list scans at a
+   glance. These are status colours and stay separate from the brand red. */
+.chip {
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.chip-new        { background: #fef3c7; color: #92400e; }
+.chip-impression { background: #dbeafe; color: #1e40af; }
+.chip-printed    { background: #e0e7ff; color: #3730a3; }
+.chip-delivered  { background: #dcfce7; color: #166534; }
+
+.empty {
+  margin: 2.5rem 0;
+  text-align: center;
+  color: var(--ink-soft);
+}
+
+/* ----- ONE ORDER ----- */
+
+.back {
+  margin-bottom: 1.25rem;
+  padding: 0.5rem 0;
+  background: none;
+  border: none;
+  color: var(--ink-soft);
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.back:hover { color: var(--ink); }
+
+.detail {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr);
+  gap: 2rem;
+  align-items: start;
+}
+
+.guard-stage {
+  height: min(62vh, 520px);
+  border-radius: 14px;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 38%, #3a3a3a 0%, #1c1c1c 70%);
+}
+
+.guard-hint {
+  margin: 0.7rem 0 0;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  text-align: center;
+}
+
+.detail-side {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.5rem;
+}
+
+.detail-ref {
+  margin: 0;
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--red);
+  font-variant-numeric: tabular-nums;
+}
+
+.detail-side h1 {
+  margin: 0.2rem 0 0.15rem;
+  font-size: 1.5rem;
+}
+
+.detail-when {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.detail-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 1.5rem 0;
+}
+
+.button-primary, .button-secondary {
+  display: block;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.button-primary {
+  border: none;
+  background: var(--red);
+  color: #ffffff;
+  font-family: "PoppinsBold", sans-serif;
+  letter-spacing: 0.06em;
+}
+
+.button-primary:hover { background: #e01f2d; }
+
+.button-secondary {
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--ink);
+}
+
+.button-secondary:hover { border-color: var(--ink); }
+
+.status-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.status-field span {
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.status-field select {
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fafafa;
+}
+
+.status-note {
+  margin: 0.45rem 0 0;
+  min-height: 1.2em;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+.detail-facts {
+  margin: 1.5rem 0 0;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.55rem 1.1rem;
+  font-size: 0.9rem;
+}
+
+.detail-facts dt {
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.detail-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 860px) {
+  .detail { grid-template-columns: 1fr; }
+  .guard-stage { height: 46vh; }
+
+  .order-row {
+    grid-template-columns: 72px 1fr;
+    grid-template-areas: "thumb body" "meta meta";
+  }
+
+  .order-thumb { grid-area: thumb; width: 72px; height: 40px; }
+  .order-body  { grid-area: body; }
+
+  .order-meta {
+    grid-area: meta;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+}
+
+/* ----- DATA PROTECTION ACTIONS -----
+ * Separated from the everyday controls, because deletion can't be undone.
+ */
+
+.detail-privacy {
+  margin-top: 1.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.privacy-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.button-danger {
+  display: block;
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.button-danger:hover:not(:disabled) {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+/* Second click state — now it looks like what it does. */
+.button-danger.is-armed {
+  background: var(--red);
+  border-color: var(--red);
+  color: #ffffff;
+  font-family: "PoppinsBold", sans-serif;
+}
+
+.button-danger:disabled { opacity: 0.5; cursor: default; }
+
+.erase-note {
+  margin: 0.2rem 0 0;
+  min-height: 1.2em;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
