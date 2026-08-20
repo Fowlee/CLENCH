@@ -37,18 +37,28 @@ function clientKey(event) {
   return crypto.createHmac('sha256', pepper).update(address).digest('hex');
 }
 
-/* Records this attempt and reports whether the caller is now over the limit.
+/* Records this attempt and reports whether the caller may continue.
+ *
+ * Returns one of three answers, because "you have made too many requests" and
+ * "we cannot tell how many requests you have made" are different things and
+ * deserve different words. Telling a customer they are booking too often when
+ * the real problem is a missing environment variable sends them away for no
+ * reason and hides the fault from whoever could fix it.
+ *
+ *   { allowed: true }
+ *   { allowed: false, reason: 'over' }         genuinely too many
+ *   { allowed: false, reason: 'unavailable' }  the limiter itself is broken
  *
  * Counting after inserting means a caller who is already over keeps adding
  * rows, which is intentional: it makes a sustained attack visible in the table
  * rather than invisible once the gate closes. */
-async function overLimit(event, bucket, max, windowMinutes) {
+async function check(event, bucket, max, windowMinutes) {
   let key;
   try {
     key = clientKey(event);
   } catch (err) {
     console.error('Rate limiting is misconfigured:', err.message);
-    return !FAIL_OPEN;
+    return { allowed: FAIL_OPEN, reason: 'unavailable' };
   }
 
   const since = new Date(Date.now() - windowMinutes * 60 * 1000).toISOString();
@@ -63,11 +73,12 @@ async function overLimit(event, bucket, max, windowMinutes) {
       '&limit=' + (max + 1)
     );
 
-    return recent.length > max;
+    if (recent.length > max) return { allowed: false, reason: 'over' };
+    return { allowed: true };
   } catch (err) {
-    console.error('Rate limit check failed for bucket ' + bucket);
-    return !FAIL_OPEN;
+    console.error('Rate limit store unreachable for bucket ' + bucket + ': ' + err.message);
+    return { allowed: FAIL_OPEN, reason: 'unavailable' };
   }
 }
 
-module.exports = { overLimit };
+module.exports = { check };

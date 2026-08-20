@@ -49,8 +49,14 @@ exports.handler = async event => {
     return json(400, { error: 'Malformed request.' });
   }
 
-  if (await rateLimit.overLimit(event, 'login', LOGIN_MAX_ATTEMPTS, LOGIN_WINDOW_MINUTES)) {
-    return json(429, { error: 'Too many attempts. Please wait a few minutes.' });
+  const allowance = await rateLimit.check(
+    event, 'login', LOGIN_MAX_ATTEMPTS, LOGIN_WINDOW_MINUTES
+  );
+
+  if (!allowance.allowed) {
+    return allowance.reason === 'over'
+      ? json(429, { error: 'Too many attempts. Please wait a few minutes.' })
+      : json(503, { error: 'Sign-in is unavailable — the server can\'t reach its database.' });
   }
 
   try {

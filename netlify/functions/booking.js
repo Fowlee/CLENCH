@@ -453,11 +453,22 @@ exports.handler = async event => {
     });
   }
 
-  if (await rateLimit.overLimit(event, 'booking', BOOKING_MAX_PER_HOUR, BOOKING_WINDOW_MINUTES)) {
-    return json(429, {
-      error: 'That is a lot of bookings from one place. Please wait a while, ' +
-             'or email post@clench.no.'
-    });
+  const allowance = await rateLimit.check(
+    event, 'booking', BOOKING_MAX_PER_HOUR, BOOKING_WINDOW_MINUTES
+  );
+
+  if (!allowance.allowed) {
+    /* Still refused either way — an ungated mail sender is worse than a closed
+     * one — but the customer is told which it is. */
+    return allowance.reason === 'over'
+      ? json(429, {
+          error: 'That is a lot of bookings from one place. Please wait a while, ' +
+                 'or email post@clench.no.'
+        })
+      : json(503, {
+          error: 'We can\'t take bookings right now — this is our fault, not ' +
+                 'yours. Please email post@clench.no and we\'ll sort it out.'
+        });
   }
 
   /* Article 7(1): the controller must be able to demonstrate consent, and
