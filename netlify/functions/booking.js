@@ -380,11 +380,9 @@ async function saveOrder(booking, design, consent) {
  * always present, so the header is never consulted.
  */
 function siteUrl(event) {
-  // An explicit setting always wins, wherever it's running.
-  if (process.env.SITE_URL) return process.env.SITE_URL.replace(/\/+$/, '');
-
   const headers = event.headers || {};
   const host = headers['x-forwarded-host'] || headers.host;
+  const clean = value => value.replace(/\/+$/, '');
 
   /* Running under `netlify dev`. Its URL variable is a placeholder
    * (https://main--site-name.netlify.app on an unlinked site), so the request's
@@ -394,9 +392,22 @@ function siteUrl(event) {
     return (headers['x-forwarded-proto'] || 'http') + '://' + host;
   }
 
-  // Deployed: DEPLOY_PRIME_URL is the branch preview, URL the live site.
-  const configured = process.env.DEPLOY_PRIME_URL || process.env.URL;
-  if (configured) return configured.replace(/\/+$/, '');
+  /* A preview links to itself, and this beats SITE_URL deliberately.
+   *
+   * SITE_URL used to be checked first, which meant that setting it to the live
+   * domain — a perfectly reasonable thing to do — made every booking made on a
+   * preview email links pointing at production, where the order does not exist
+   * and the page may not either. A preview emailing you to production is never
+   * what anyone wants, so the context wins here. */
+  const context = process.env.CONTEXT;
+  if ((context === 'deploy-preview' || context === 'branch-deploy') &&
+      process.env.DEPLOY_PRIME_URL) {
+    return clean(process.env.DEPLOY_PRIME_URL);
+  }
+
+  // Production: an explicit setting, then whatever Netlify says the site is.
+  const configured = process.env.SITE_URL || process.env.URL;
+  if (configured) return clean(configured);
 
   return SITE_URL;
 }

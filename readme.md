@@ -11,7 +11,7 @@ Plain HTML/CSS with a small amount of vanilla JavaScript (no frameworks, no buil
 **Public site**
 
 - `index.html`, `order.html`, `process.html` — pages
-- `header.html`, `footer.html` — shared header and footer, injected at runtime via `fetch()`
+- `scripts/siteChrome.js` — the shared header and footer, inserted synchronously as the page parses so the header paints before the content rather than dropping in after it
 - `base.css` — site-wide styles
 - `scripts/index.js` — header/footer injection, header behavior (scroll state, mobile nav), the logo banner and the gallery
 - `scripts/orderForm.js` — booking form on `order.html`: validation, then posts to the booking function
@@ -86,7 +86,7 @@ If the booking function can't be reached, the form falls back to opening the vis
 
 ## Running locally
 
-The header is loaded via `fetch('/header.html')`, so opening `index.html` from the filesystem (`file://`) won't work — serve the folder instead:
+The pages fetch other things at runtime, so opening `index.html` from the filesystem (`file://`) won't work — serve the folder instead:
 
 ```bash
 python3 -m http.server 8000

@@ -34,39 +34,6 @@ function initHeader() {
   });
 }
 
-function loadHeader() {
-  const placeholder = document.getElementById('header-placeholder');
-  if (!placeholder) return;
-
-  fetch('header.html')
-    .then(res => res.text())
-    .then(html => {
-      placeholder.innerHTML = html;
-      initHeader(); // now the elements exist → attach listeners
-    })
-    .catch(err => {
-      console.error('Failed to load header:', err);
-    });
-}
-
-function loadFooter() {
-  const placeholder = document.getElementById('footer-placeholder');
-  if (!placeholder) return;
-
-  fetch('footer.html')
-    .then(res => res.text())
-    .then(html => {
-      placeholder.innerHTML = html;
-
-      // Keep the copyright year current without touching the markup
-      const year = document.getElementById('footer-year');
-      if (year) year.textContent = new Date().getFullYear();
-    })
-    .catch(err => {
-      console.error('Failed to load footer:', err);
-    });
-}
-
 function initBanner() {
   const track = document.getElementById('banner-track');
   if (!track) return;
@@ -207,9 +174,11 @@ function initGallery() {
 }
 
 // with defer this runs after HTML is parsed
+/* The header and footer are already in the document by now — scripts/siteChrome.js
+ * puts them there during parsing, rather than fetching them afterwards. All that
+ * is left is to attach the behaviour. */
 document.addEventListener('DOMContentLoaded', () => {
-  loadHeader();
-  loadFooter();
+  initHeader();
   initBanner();
   initGallery();
 });
