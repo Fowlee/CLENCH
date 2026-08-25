@@ -360,9 +360,14 @@ el('status').addEventListener('change', async event => {
 
 /* ----- printing -----
  *
- * The sheet the workshop works from. It shows the design the way the designer
- * shows it: the artwork sitting inside the guard's printable front, on the
- * guard's own colour, with the outline and the V-notch as a trim guide.
+ * The sheet the workshop works from: the artwork at its real size, the dashed
+ * outline and V-notch as a trim guide, and nothing else on the page.
+ *
+ * Deliberately bare. It used to carry the reference, customer, colour and date
+ * above the design, and to fill the outline with the guard's own colour so the
+ * sheet resembled the finished guard. Both are gone at the client's request —
+ * what goes on the press is the design, so anything else is ink that has to be
+ * ignored, and a coloured fill is a background nobody asked to print.
  *
  * The shape comes from images/print-zone.svg rather than being copied here, so
  * changing the guide in the designer changes the sheet too. It's fetched once
@@ -397,13 +402,12 @@ el('print').addEventListener('click', () => {
 
   const height = (PRINT_ZONE_MM * TEXTURE_HEIGHT / TEXTURE_WIDTH).toFixed(1);
 
-  /* One SVG, three layers: the guard's colour in the shape of its front, the
-     artwork on top, then the outline drawn over both so it stays visible
-     against dark artwork. */
+  /* Artwork, then the outline over it so the guide stays visible against dark
+     artwork. Nothing is painted underneath — the guard's colour is the guard's,
+     not the sheet's, and anywhere the design is transparent stays paper. */
   const artwork = zonePath
     ? '<svg class="zone" viewBox="0 0 ' + TEXTURE_WIDTH + ' ' + TEXTURE_HEIGHT + '" ' +
           'xmlns="http://www.w3.org/2000/svg">' +
-        '<path d="' + zonePath + '" fill="' + escapeHtml(design.baseColor) + '"/>' +
         '<image href="' + escapeHtml(design.print) + '" x="0" y="0" ' +
                'width="' + TEXTURE_WIDTH + '" height="' + TEXTURE_HEIGHT + '"/>' +
         /* Two strokes, because one can't work on every guard. A dark dash
@@ -416,31 +420,19 @@ el('print').addEventListener('click', () => {
     // The outline failed to load; the artwork alone is still worth printing
     : '<img class="zone" src="' + escapeHtml(design.print) + '" alt="">';
 
+  /* The title never prints — it names the window and the print dialog, which is
+     the only way to tell two open sheets apart now that the page carries no
+     reference of its own. */
   sheet.document.write(
     '<!DOCTYPE html><html><head><meta charset="utf-8">' +
     '<title>' + escapeHtml(order.ref) + ' – ' + escapeHtml(order.name) + '</title>' +
     '<style>' +
-    'body{margin:0;padding:20mm 18mm;font:13px Arial,sans-serif;color:#111}' +
-    'h1{margin:0 0 1mm;font-size:19px;letter-spacing:0.06em}' +
-    '.meta{margin:0 0 1mm;color:#555}' +
-    '.swatch{display:inline-block;width:11px;height:11px;border:1px solid #999;' +
-      'vertical-align:-1px;margin-right:5px}' +
+    'body{margin:0;padding:20mm 18mm}' +
     // Sized in millimetres so the sheet comes off the printer life-size
-    '.zone{display:block;margin-top:12mm;width:' + PRINT_ZONE_MM + 'mm;' +
-      'height:' + height + 'mm}' +
-    '.scale{margin-top:4mm;font-size:10px;color:#777}' +
+    '.zone{display:block;width:' + PRINT_ZONE_MM + 'mm;height:' + height + 'mm}' +
     '@page{size:A4 portrait;margin:0}' +
     '</style></head><body>' +
-    '<h1>' + escapeHtml(order.ref) + '</h1>' +
-    '<p class="meta">' + escapeHtml(order.name) + ' · ' + escapeHtml(order.sport) +
-      (order.club ? ' · ' + escapeHtml(order.club) : '') + '</p>' +
-    '<p class="meta"><span class="swatch" style="background:' +
-      escapeHtml(design.baseColor) + '"></span>' + escapeHtml(design.baseColor) +
-      ' · design v' + design.version + '</p>' +
-    '<p class="meta">Ordered ' + escapeHtml(formatDate(order.createdAt)) + '</p>' +
     artwork +
-    '<p class="scale">Printed at ' + PRINT_ZONE_MM + ' mm wide — actual size. ' +
-      'Dashed line is the edge of the printable front.</p>' +
     '</body></html>'
   );
   sheet.document.close();
