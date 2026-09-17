@@ -1,0 +1,807 @@
+/* ===== ORDERS DASHBOARD =====
+ *
+ * CLENCH's own view of incoming orders: search for a customer, look at the
+ * guard they designed, print it, and move it along as it's made.
+ *
+ * Deliberately a separate page from the designer. It's a different tool for a
+ * different person, and keeping them apart means a change to the customer's
+ * designer can't quietly break this. The one thing shared is the engine —
+ * MouthguardDesigner — so the guard here is the guard they designed.
+ *
+ * Every request needs the session cookie set by /.netlify/functions/admin.
+ */
+
+import { PALETTE, AVAILABILITY_ENDPOINT } from '../colours.js';
+import { makeZip } from './zip.js';
+import { MouthguardDesigner } from '../mouthguardDesigner.js';
+import { TEXTURE_WIDTH, TEXTURE_HEIGHT, allFontsReady } from '../designFormat.js';
+
+const ADMIN_ENDPOINT = '/.netlify/functions/admin';
+const ORDERS_ENDPOINT = '/.netlify/functions/orders';
+
+// Long enough that typing an email doesn't fire a request per keystroke.
+const SEARCH_DEBOUNCE = 250;
+
+const STATUS_LABELS = {
+  new: 'New',
+  impression: 'Impression taken',
+  printed: 'Printed',
+  delivered: 'Delivered'
+};
+
+const el = id => document.getElementById(id);
+
+const signinView = el('signin');
+const appView = el('app');
+const listView = el('view-list');
+const detailView = el('view-detail');
+
+// The order currently open, so printing knows what it's printing.
+let openOrder = null;
+
+/* ----- session ----- */
+
+async function start() {
+  try {
+    const response = await fetch(ADMIN_ENDPOINT);
+    const { signedIn } = await response.json();
+
+    if (signedIn) showApp();
+    else showSignIn();
+  } catch (error) {
+    console.error('Could not reach the dashboard:', error);
+    showSignIn();
+  }
+}
+
+function showSignIn() {
+  signinView.hidden = false;
+  appView.hidden = true;
+  el('password').focus();
+}
+
+function showApp() {
+  signinView.hidden = true;
+  appView.hidden = false;
+
+  /* The booking email links straight to one order. Load the list underneath it
+     anyway, so closing the order lands somewhere useful rather than empty. */
+  const wanted = new URLSearchParams(window.location.search).get('order');
+
+  loadOrders('');
+  if (wanted) showOrder(wanted);
+}
+
+el('signin-form').addEventListener('submit', async event => {
+  event.preventDefault();
+
+  const button = el('signin-submit');
+  const error = el('signin-error');
+
+  button.disabled = true;
+  error.textContent = '';
+
+  try {
+    const response = await fetch(ADMIN_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: el('password').value })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      error.textContent = data.error || 'That didn\'t work.';
+      button.disabled = false;
+      el('password').select();
+      return;
+    }
+
+    el('password').value = '';
+    showApp();
+  } catch (err) {
+    console.error('Sign in failed:', err);
+    error.textContent = 'Couldn\'t reach the server. Check your connection.';
+  } finally {
+    button.disabled = false;
+  }
+});
+
+el('signout').addEventListener('click', async () => {
+  await fetch(ADMIN_ENDPOINT, { method: 'DELETE' }).catch(() => {});
+  window.location.reload();
+});
+
+/* ----- the list ----- */
+
+const searchInput = el('search');
+let searchTimer = null;
+
+searchInput.addEventListener('input', () => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => loadOrders(searchInput.value.trim()), SEARCH_DEBOUNCE);
+});
+
+async function loadOrders(query) {
+  const note = el('search-note');
+  note.textContent = query ? 'Searching…' : 'Most recent orders';
+
+  try {
+    const response = await fetch(ORDERS_ENDPOINT + '?q=' + encodeURIComponent(query));
+
+    // The cookie expired while the tab sat open
+    if (response.status === 401) return showSignIn();
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error);
+
+    renderOrders(data.orders);
+
+    note.textContent = query
+      ? data.orders.length + (data.orders.length === 1 ? ' match' : ' matches')
+      : 'Most recent orders';
+  } catch (error) {
+    console.error('Loading orders failed:', error);
+    note.textContent = 'Couldn\'t load orders.';
+  }
+}
+
+function formatDate(iso) {
+  return new Date(iso).toLocaleDateString('nb-NO', {
+    day: 'numeric', month: 'short', year: 'numeric'
+  });
+}
+
+function renderOrders(orders) {
+  const list = el('orders');
+  list.textContent = '';
+
+  el('empty').hidden = orders.length > 0;
+
+  orders.forEach(order => {
+    const item = document.createElement('li');
+    item.className = 'order';
+
+    /* A button, not a div with a click handler: the whole row is one action,
+       and this way it's reachable by keyboard for free. */
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'order-row';
+    button.addEventListener('click', () => showOrder(order.ref));
+
+    const thumb = document.createElement('img');
+    thumb.className = 'order-thumb';
+    thumb.alt = '';
+    if (order.thumb) thumb.src = order.thumb;
+
+    const body = document.createElement('div');
+    body.className = 'order-body';
+    body.innerHTML =
+      '<p class="order-name"></p>' +
+      '<p class="order-contact"></p>' +
+      '<p class="order-sport"></p>';
+
+    // Customer-supplied text, so it's set as text and never parsed as markup
+    body.querySelector('.order-name').textContent = order.name;
+    body.querySelector('.order-contact').textContent = order.email + ' · ' + order.phone;
+    body.querySelector('.order-sport').textContent =
+      order.club ? order.sport + ' · ' + order.club : order.sport;
+
+    const meta = document.createElement('div');
+    meta.className = 'order-meta';
+
+    const status = document.createElement('span');
+    status.className = 'chip chip-' + order.status;
+    status.textContent = STATUS_LABELS[order.status] || order.status;
+
+    const when = document.createElement('p');
+    when.className = 'order-when';
+    when.textContent = order.ref + ' · ' + formatDate(order.createdAt);
+
+    meta.append(status, when);
+    button.append(thumb, body, meta);
+    item.append(button);
+    list.append(item);
+  });
+}
+
+/* ----- one order ----- */
+
+el('back').addEventListener('click', () => {
+  detailView.hidden = true;
+  listView.hidden = false;
+  openOrder = null;
+});
+
+async function showOrder(ref) {
+  try {
+    const response = await fetch(ORDERS_ENDPOINT + '?ref=' + encodeURIComponent(ref));
+    if (response.status === 401) return showSignIn();
+
+    const data = await response.json();
+    if (!response.ok || data.error) throw new Error(data.error || 'Not found');
+
+    openOrder = data;
+
+    listView.hidden = true;
+    detailView.hidden = false;
+    window.scrollTo(0, 0);
+
+    renderDetail(data);
+
+    /* An order with no design row would otherwise still show the guard from
+       whichever order was opened before it. */
+    if (data.design) await showDesign(data.design);
+    else clearGuard();
+  } catch (error) {
+    console.error('Opening the order failed:', error);
+  }
+}
+
+function renderDetail({ order, design, versionCount }) {
+  el('detail-ref').textContent = order.ref;
+  el('detail-name').textContent = order.name;
+  el('detail-when').textContent = 'Ordered ' + formatDate(order.createdAt);
+
+  el('status').value = order.status;
+  el('status-note').textContent = '';
+
+  el('customer-link').href = order.viewLink;
+
+  /* Only the fields that were filled in. An empty row tells the client nothing
+     and makes the ones that matter harder to find. */
+  const facts = [
+    ['Email', order.email],
+    ['Phone', order.phone],
+    ['Sport', order.sport],
+    ['Club / team', order.club],
+    ['Preferred times', order.availability],
+    ['Existing records', order.records],
+    ['Braces', order.braces === 'Yes' ? 'Yes' : ''],
+    ['Design notes', order.notes],
+    ['Message', order.message],
+    ['Guard colour', design ? design.baseColor : ''],
+    ['Design version', versionCount > 1 ? versionCount + ' (refined)' : 'Original']
+  ];
+
+  const list = el('detail-facts');
+  list.textContent = '';
+
+  facts.forEach(([label, value]) => {
+    if (!value || value === '—') return;
+
+    const term = document.createElement('dt');
+    term.textContent = label;
+
+    const detail = document.createElement('dd');
+    detail.textContent = value;
+
+    list.append(term, detail);
+  });
+}
+
+/* ----- the guard -----
+ *
+ * Built once and reused: loading the .glb takes a moment, and the client moves
+ * between orders far more often than he opens the page.
+ */
+
+let designer = null;
+let artCanvas = null;
+
+function ensureGuard() {
+  if (designer) return;
+
+  designer = new MouthguardDesigner(el('guard-stage'));
+  designer.lockToViewing();
+
+  /* A StaticCanvas rather than the interactive one the designer uses: nothing
+     here is editable, so it never draws selection handles and its own element
+     can go straight onto the model as the texture. */
+  artCanvas = new fabric.StaticCanvas(null, {
+    width: TEXTURE_WIDTH,
+    height: TEXTURE_HEIGHT,
+    backgroundColor: null
+  });
+
+  designer.applyCanvasTexture(artCanvas.lowerCanvasEl);
+}
+
+// Nothing to show: blank the artwork rather than leaving a stale design up.
+function clearGuard() {
+  if (!artCanvas) return;
+
+  artCanvas.clear();
+  artCanvas.renderAll();
+  designer.refreshTexture();
+}
+
+async function showDesign(design) {
+  ensureGuard();
+
+  designer.setColor(design.baseColor);
+
+  // Fabric bakes the font in as it draws, so a face that hasn't arrived yet
+  // would be permanently wrong on the guard.
+  await allFontsReady();
+
+  await new Promise(resolve => artCanvas.loadFromJSON(design.canvas, resolve));
+
+  artCanvas.renderAll();
+  designer.refreshTexture();
+}
+
+/* ----- status ----- */
+
+el('status').addEventListener('change', async event => {
+  if (!openOrder) return;
+
+  const status = event.target.value;
+  const note = el('status-note');
+  note.textContent = 'Saving…';
+
+  try {
+    const response = await fetch(ORDERS_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ref: openOrder.order.ref, status })
+    });
+
+    if (response.status === 401) return showSignIn();
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error);
+
+    openOrder.order.status = status;
+    note.textContent = 'Saved.';
+  } catch (error) {
+    console.error('Saving the status failed:', error);
+    note.textContent = 'Couldn\'t save that. Try again.';
+  }
+});
+
+/* ----- printing -----
+ *
+ * The sheet the workshop works from: the artwork at its real size, the dashed
+ * outline and V-notch as a trim guide, and nothing else on the page.
+ *
+ * Deliberately bare. It used to carry the reference, customer, colour and date
+ * above the design, and to fill the outline with the guard's own colour so the
+ * sheet resembled the finished guard. Both are gone at the client's request —
+ * what goes on the press is the design, so anything else is ink that has to be
+ * ignored, and a coloured fill is a background nobody asked to print.
+ *
+ * The shape comes from images/print-zone.svg rather than being copied here, so
+ * changing the guide in the designer changes the sheet too. It's fetched once
+ * and kept, because the print window has to open synchronously inside the click
+ * or the pop-up blocker swallows it.
+ */
+
+/* How wide the printable front actually is on a finished guard. The sheet is
+ * printed at this size so artwork can be checked against the real thing.
+ * MEASURE A REAL GUARD AND CORRECT THIS — everything else on the sheet scales
+ * from it, and the aspect (1024:357) is fixed by the texture. */
+const PRINT_ZONE_MM = 70;
+
+let zonePath = null;
+
+fetch('/images/print-zone.svg')
+  .then(response => response.text())
+  .then(svg => {
+    const match = /<path[^>]*\sd="([^"]+)"/.exec(svg);
+    if (match) zonePath = match[1];
+  })
+  .catch(error => console.error('Could not load the print zone outline:', error));
+
+el('print').addEventListener('click', () => {
+  if (!openOrder || !openOrder.design || !openOrder.design.print) return;
+
+  const { order, design } = openOrder;
+
+  // Opened synchronously inside the click, or the pop-up blocker eats it
+  const sheet = window.open('', '_blank');
+  if (!sheet) return;
+
+  const height = (PRINT_ZONE_MM * TEXTURE_HEIGHT / TEXTURE_WIDTH).toFixed(1);
+
+  /* Artwork, then the outline over it so the guide stays visible against dark
+     artwork. Nothing is painted underneath — the guard's colour is the guard's,
+     not the sheet's, and anywhere the design is transparent stays paper. */
+  const artwork = zonePath
+    ? '<svg class="zone" viewBox="0 0 ' + TEXTURE_WIDTH + ' ' + TEXTURE_HEIGHT + '" ' +
+          'xmlns="http://www.w3.org/2000/svg">' +
+        '<image href="' + escapeHtml(design.print) + '" x="0" y="0" ' +
+               'width="' + TEXTURE_WIDTH + '" height="' + TEXTURE_HEIGHT + '"/>' +
+        /* Two strokes, because one can't work on every guard. A dark dash
+           vanishes on a black guard and a light one vanishes on white, so a
+           white halo goes underneath and the dark dash sits on top of it. */
+        '<path d="' + zonePath + '" fill="none" stroke="#ffffff" stroke-width="6"/>' +
+        '<path d="' + zonePath + '" fill="none" stroke="#111111" stroke-width="2.5" ' +
+              'stroke-dasharray="10 8"/>' +
+      '</svg>'
+    // The outline failed to load; the artwork alone is still worth printing
+    : '<img class="zone" src="' + escapeHtml(design.print) + '" alt="">';
+
+  /* The title never prints — it names the window and the print dialog, which is
+     the only way to tell two open sheets apart now that the page carries no
+     reference of its own. */
+  sheet.document.write(
+    '<!DOCTYPE html><html><head><meta charset="utf-8">' +
+    '<title>' + escapeHtml(order.ref) + ' – ' + escapeHtml(order.name) + '</title>' +
+    '<style>' +
+    'body{margin:0;padding:20mm 18mm}' +
+    // Sized in millimetres so the sheet comes off the printer life-size
+    '.zone{display:block;width:' + PRINT_ZONE_MM + 'mm;height:' + height + 'mm}' +
+    '@page{size:A4 portrait;margin:0}' +
+    '</style></head><body>' +
+    artwork +
+    '</body></html>'
+  );
+  sheet.document.close();
+
+  /* Wait for the artwork to arrive before the print dialog measures the page.
+     The SVG route has no load event of its own, so give the image inside it a
+     moment; the <img> fallback has one. */
+  /* Print once the artwork has arrived — and only once. On the normal path the
+     artwork is an SVG <image>, which has no .complete, so matching on 'img'
+     alone found nothing and both the fallback timer and the load handler fired
+     a dialog. The timer stays as a backstop for a URL that never loads. */
+  let printed = false;
+
+  function printOnce() {
+    if (printed || sheet.closed) return;
+    printed = true;
+    sheet.print();
+  }
+
+  const artworkNode = sheet.document.querySelector('img, image');
+
+  if (artworkNode && artworkNode.complete) printOnce();
+  else if (artworkNode) artworkNode.addEventListener('load', printOnce);
+
+  // Belongs to the new window, so closing it cancels the timer with it
+  sheet.setTimeout(printOnce, 3000);
+});
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+start();
+
+/* ----- data-protection actions -----
+ *
+ * Articles 15, 17 and 20 give a customer the right to a copy of what's held
+ * about them and to have it deleted. Done from here so it actually happens, and
+ * so deletion removes the stored files too — the database cascade doesn't reach
+ * the bucket, and artwork left behind after an erasure request is exactly the
+ * kind of thing that makes the request meaningless.
+ */
+
+const eraseButton = el('erase');
+const eraseNote = el('erase-note');
+
+// Deleting a customer is not undoable, so it takes two deliberate clicks.
+let erasePrimed = false;
+
+function resetErase() {
+  erasePrimed = false;
+  eraseButton.textContent = 'DELETE THIS ORDER';
+  eraseButton.classList.remove('is-armed');
+}
+
+eraseButton.addEventListener('click', async () => {
+  if (!openOrder) return;
+
+  if (!erasePrimed) {
+    erasePrimed = true;
+    eraseButton.textContent = 'CLICK AGAIN TO DELETE PERMANENTLY';
+    eraseButton.classList.add('is-armed');
+    eraseNote.textContent =
+      'This removes the customer\'s details, their design and its files. It cannot be undone.';
+    return;
+  }
+
+  eraseButton.disabled = true;
+  eraseNote.textContent = 'Deleting…';
+
+  try {
+    const response = await fetch(
+      ORDERS_ENDPOINT + '?ref=' + encodeURIComponent(openOrder.order.ref),
+      { method: 'DELETE' }
+    );
+
+    if (response.status === 401) return showSignIn();
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error);
+
+    // Nothing left to show, so go back to a list that no longer contains it
+    detailView.hidden = true;
+    listView.hidden = false;
+    openOrder = null;
+    loadOrders(searchInput.value.trim());
+  } catch (error) {
+    console.error('Erasing the order failed:', error);
+    eraseNote.textContent = 'Couldn\'t delete that. Try again.';
+  } finally {
+    eraseButton.disabled = false;
+    resetErase();
+  }
+});
+
+/* A copy of everything held about one order, for a subject access request.
+ * Downloaded as JSON rather than shown, so it can be sent on as it is. */
+el('export').addEventListener('click', async () => {
+  if (!openOrder) return;
+
+  const reference = openOrder.order.ref;
+  eraseNote.textContent = 'Preparing the export…';
+
+  try {
+    const response = await fetch(
+      ORDERS_ENDPOINT + '?ref=' + encodeURIComponent(reference) + '&export=1'
+    );
+
+    if (response.status === 401) return showSignIn();
+
+    const data = await response.json();
+    if (!response.ok || data.error) throw new Error(data.error || 'Export failed');
+
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = reference + '-data.json';
+    link.click();
+
+    URL.revokeObjectURL(url);
+    eraseNote.textContent = 'Exported ' + reference + '-data.json';
+  } catch (error) {
+    console.error('Exporting the order failed:', error);
+    eraseNote.textContent = 'Couldn\'t build that export.';
+  }
+});
+
+/* ----- colour stock -----
+ *
+ * Which guard colours can be ordered today. Switching one off greys it out in
+ * the designer within the minute and stops it being selected, so an athlete
+ * cannot order a guard in a material the workshop has run out of.
+ *
+ * The palette comes from colours.js, the same list the designer draws from, so
+ * a colour added there appears here without a second edit.
+ */
+
+const stockList = el('stock-list');
+const stockStatus = el('stock-status');
+const stockCount = el('stock-count');
+
+let unavailable = new Set();
+
+function renderStock() {
+  stockList.textContent = '';
+
+  PALETTE.forEach(colour => {
+    const off = unavailable.has(colour.hex);
+
+    const row = document.createElement('li');
+    row.className = 'stock-row' + (off ? ' is-off' : '');
+
+    const dot = document.createElement('span');
+    dot.className = 'stock-dot';
+    dot.style.background = colour.hex;
+
+    const name = document.createElement('span');
+    name.className = 'stock-name';
+    name.textContent = colour.name;
+
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'stock-toggle';
+    toggle.textContent = off ? 'Out of stock' : 'In stock';
+    toggle.setAttribute('aria-pressed', String(!off));
+    toggle.addEventListener('click', () => setAvailability(colour, !off));
+
+    row.append(dot, name, toggle);
+    stockList.appendChild(row);
+  });
+
+  const out = unavailable.size;
+  stockCount.textContent = out ? out + ' out of stock' : 'all available';
+}
+
+async function setAvailability(colour, available) {
+  stockStatus.textContent = 'Saving…';
+
+  try {
+    const response = await fetch(AVAILABILITY_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ hex: colour.hex, available })
+    });
+
+    if (response.status === 401) return showSignIn();
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error);
+
+    if (available) unavailable.delete(colour.hex);
+    else unavailable.add(colour.hex);
+
+    renderStock();
+    stockStatus.textContent = colour.name + (available ? ' is available again.' : ' is now out of stock.');
+  } catch (error) {
+    console.error('Could not change colour availability:', error);
+    stockStatus.textContent = "Couldn't save that. Try again.";
+  }
+}
+
+async function loadStock() {
+  try {
+    const response = await fetch(AVAILABILITY_ENDPOINT);
+    const data = await response.json();
+    unavailable = new Set((data.unavailable || []).map(hex => hex.toLowerCase()));
+  } catch (error) {
+    console.error('Could not load colour availability:', error);
+    // An unreachable list is shown as all-available rather than as nothing
+    unavailable = new Set();
+  }
+
+  renderStock();
+}
+
+loadStock();
+
+/* ----- exporting the parts -----
+ *
+ * The workshop asked for the design as separate PNGs rather than one picture:
+ * each logo and each piece of text on its own transparent background, so they
+ * can be cut, printed or re-laid-out individually.
+ *
+ * Every piece is exported at the same scale as the print file, so two PNGs
+ * placed side by side keep the proportions the customer chose. A manifest goes
+ * in alongside them, because a folder of cropped images says nothing about
+ * where any of it belonged.
+ */
+
+// Matches the print sheet, so a part measured off one matches the other.
+const EXPORT_SCALE = 2;
+
+function slug(text) {
+  return String(text || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 24) || 'part';
+}
+
+/* One PNG per object, cropped to the object itself.
+ *
+ * Fabric's toDataURL on an object renders just that object on transparency,
+ * which is exactly what's wanted — but it uses the object's current angle and
+ * scale, so what comes out matches what the customer saw. */
+function exportObject(object, index) {
+  const kind = object.type === 'image' ? 'image' : 'text';
+
+  const label = object.type === 'image'
+    ? 'image'
+    : slug(object.text);
+
+  const dataUrl = object.toDataURL({
+    format: 'png',
+    multiplier: EXPORT_SCALE,
+    enableRetinaScaling: false
+  });
+
+  return {
+    name: String(index + 1).padStart(2, '0') + '-' + kind + '-' + label + '.png',
+    bytes: dataUrlToBytes(dataUrl),
+    object
+  };
+}
+
+function dataUrlToBytes(dataUrl) {
+  const base64 = dataUrl.slice(dataUrl.indexOf(',') + 1);
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
+/* Where each part sat, in the same 1024 x 357 space as the print file. Without
+ * this the PNGs are a pile of shapes with no way to reassemble them. */
+function manifest(order, design, parts) {
+  const lines = [
+    'CLENCH — design parts',
+    '',
+    'Order       ' + order.ref,
+    'Customer    ' + order.name,
+    'Guard       ' + design.baseColor,
+    'Design      version ' + design.version,
+    'Exported    ' + new Date().toISOString(),
+    '',
+    'Positions are in the print file\'s own coordinates: ' +
+      TEXTURE_WIDTH + ' x ' + TEXTURE_HEIGHT + ', origin top-left.',
+    'PNGs are rendered at ' + EXPORT_SCALE + 'x those dimensions.',
+    '',
+    'file'.padEnd(34) + 'left'.padStart(7) + 'top'.padStart(8) +
+      'width'.padStart(8) + 'height'.padStart(8) + '  angle',
+    '-'.repeat(75)
+  ];
+
+  parts.forEach(part => {
+    const o = part.object;
+    const rect = o.getBoundingRect(true);
+
+    lines.push(
+      part.name.padEnd(34) +
+      String(Math.round(rect.left)).padStart(7) +
+      String(Math.round(rect.top)).padStart(8) +
+      String(Math.round(rect.width)).padStart(8) +
+      String(Math.round(rect.height)).padStart(8) +
+      '  ' + Math.round(o.angle || 0) + '\u00b0'
+    );
+  });
+
+  lines.push('');
+  lines.push('The full design is also here as 00-full-design.png.');
+
+  return lines.join('\n');
+}
+
+el('export-parts').addEventListener('click', async () => {
+  if (!openOrder || !openOrder.design) return;
+
+  const { order, design } = openOrder;
+  const status = el('export-parts-status');
+
+  const objects = artCanvas.getObjects();
+  if (!objects.length) {
+    status.textContent = 'This design has nothing in it to export.';
+    return;
+  }
+
+  status.textContent = 'Building the parts…';
+
+  try {
+    // Fonts have to be in before text is rasterised, or it exports in a fallback
+    await allFontsReady();
+
+    const parts = objects.map(exportObject);
+
+    /* The whole design goes in too. The parts answer "what is on it"; this one
+     * answers "what should it look like", and it costs one more file. */
+    const whole = artCanvas.toDataURL({
+      format: 'png',
+      multiplier: EXPORT_SCALE,
+      enableRetinaScaling: false
+    });
+
+    const files = [
+      { name: '00-full-design.png', bytes: dataUrlToBytes(whole) },
+      ...parts.map(({ name, bytes }) => ({ name, bytes })),
+      { name: 'parts.txt', bytes: manifest(order, design, parts) }
+    ];
+
+    const blob = makeZip(files);
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = order.ref + '-parts.zip';
+    link.click();
+
+    URL.revokeObjectURL(url);
+    status.textContent = 'Exported ' + files.length + ' files.';
+  } catch (error) {
+    console.error('Exporting the parts failed:', error);
+    status.textContent = "Couldn't build that export.";
+  }
+});
