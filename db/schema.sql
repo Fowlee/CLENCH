@@ -156,3 +156,20 @@ alter table rate_limits enable row level security;
 
 -- Nothing here is worth keeping once its window has passed.
 -- delete from rate_limits where created_at < now() - interval '1 day';
+
+
+/* ----- colour availability -----
+ * Which guard colours can currently be ordered. A row here means the colour has
+ * been switched off in the dashboard; anything absent is available.
+ *
+ * Storing only the exceptions keeps this in step with colours.js on its own:
+ * adding a colour to the palette makes it available without a migration, and
+ * removing one leaves at most a harmless orphan row.
+ */
+create table if not exists colour_availability (
+  hex        text primary key,         -- '#ff7f00', lower case
+  note       text,                     -- optional: why, for whoever turned it off
+  updated_at timestamptz not null default now()
+);
+
+alter table colour_availability enable row level security;

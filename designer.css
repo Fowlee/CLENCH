@@ -588,3 +588,42 @@ body.is-viewing #designer {
   align-items: center;
   justify-content: center;
 }
+
+/* ----- COLOURS THE WORKSHOP HAS RUN OUT OF -----
+   Kept on the page rather than removed. A customer who came back for the
+   turquoise one should see that it exists and is out of stock, not wonder
+   whether they imagined it. */
+
+.swatch.unavailable {
+  cursor: not-allowed;
+  opacity: 0.28;
+  filter: grayscale(0.7);
+  position: relative;
+}
+
+.swatch.unavailable:hover {
+  transform: none;   /* nothing happens on click, so nothing should invite one */
+}
+
+/* A thin bar across the swatch, so this reads as "off" and not merely as a
+   pale colour — several of the palette's colours are pale to begin with. */
+.swatch.unavailable::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom right,
+    transparent calc(50% - 1px),
+    rgba(0, 0, 0, 0.85) calc(50% - 1px),
+    rgba(0, 0, 0, 0.85) calc(50% + 1px),
+    transparent calc(50% + 1px)
+  );
+  border-radius: inherit;
+}
+
+.swatch-note {
+  margin: 0.6rem 0 0;
+  min-height: 1em;
+  font-size: 0.78rem;
+  color: #9a9a9a;
+}

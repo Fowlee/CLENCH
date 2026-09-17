@@ -1,3 +1,4 @@
+import { PALETTE, AVAILABILITY_ENDPOINT, nameFor } from './colours.js';
 import { MouthguardDesigner } from './mouthguardDesigner.js';
 import { TEXTURE_WIDTH, TEXTURE_HEIGHT, FONTS, loadFont, allFontsReady } from './designFormat.js';
 
@@ -42,8 +43,26 @@ tabs.forEach((tab) => {
     })
 })
 
-const swatches = document.querySelectorAll('.swatch');
 const artStage = document.querySelector('.art-stage');
+const swatchNote = document.getElementById('swatch-note');
+
+/* The swatches are built here rather than written into designer.html, so the
+ * palette lives in one file that the dashboard reads too. */
+const swatchRow = document.querySelector('.swatches');
+
+PALETTE.forEach((colour) => {
+    const swatch = document.createElement('div');
+    swatch.className = 'swatch';
+    swatch.dataset.color = colour.hex;
+    swatch.title = colour.name;
+    swatchRow.appendChild(swatch);
+});
+
+const swatches = document.querySelectorAll('.swatch');
+
+/* Colours the workshop has switched off in the dashboard. Held here so a click
+ * can be refused, since a disabled look alone would still be clickable. */
+let unavailable = new Set();
 
 /* Start on a dark guard. The model's own material is near-white, and text
  * defaults to white, so a fresh designer would show an invisible design. */
@@ -54,6 +73,10 @@ const DEFAULT_COLOR = '#000000';
 let currentColor = DEFAULT_COLOR;
 
 function selectColor(hex) {
+    /* Refuse rather than rely on the greyed-out look. A customer who orders a
+     * colour that cannot be made is a phone call and a disappointed athlete. */
+    if (unavailable.has(hex)) return;
+
     currentColor = hex;
     designer.setColor(hex);
 
@@ -75,6 +98,49 @@ swatches.forEach((swatch) => {
 })
 
 selectColor(DEFAULT_COLOR);
+
+/* ----- what can actually be made today -----
+ *
+ * The workshop switches colours off in the dashboard when a material runs out.
+ * They stay on the page, greyed and unclickable, rather than disappearing —
+ * a customer who came back for the turquoise one should see that it exists and
+ * is out of stock, not quietly wonder whether they imagined it.
+ *
+ * If this request fails the palette stays fully available. Being unable to
+ * reach a stock list is a poor reason to stop someone designing a guard; the
+ * worst case is a conversation the workshop was going to have anyway.
+ */
+fetch(AVAILABILITY_ENDPOINT)
+    .then((response) => response.json())
+    .then(({ unavailable: offList = [], notes = {} }) => {
+        unavailable = new Set(offList.map((hex) => hex.toLowerCase()));
+
+        swatches.forEach((swatch) => {
+            const hex = swatch.dataset.color;
+            const isOff = unavailable.has(hex);
+
+            swatch.classList.toggle('unavailable', isOff);
+            swatch.setAttribute('aria-disabled', String(isOff));
+            swatch.title = isOff
+                ? nameFor(hex) + ' — ' + (notes[hex] || 'not available right now')
+                : nameFor(hex);
+        });
+
+        /* The guard starts black. If black is one of the ones switched off, move
+         * to the first colour that isn't, rather than opening on something the
+         * customer cannot have. */
+        if (unavailable.has(currentColor)) {
+            const firstAvailable = PALETTE.find((colour) => !unavailable.has(colour.hex));
+            if (firstAvailable) selectColor(firstAvailable.hex);
+        }
+
+        if (swatchNote) {
+            swatchNote.textContent = unavailable.size
+                ? 'Greyed-out colours are out of stock at the moment.'
+                : '';
+        }
+    })
+    .catch((error) => console.error('Could not load colour availability:', error));
 
 /* ===== TEXT TOOL =====
  *

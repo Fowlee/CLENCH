@@ -123,6 +123,80 @@ disclosed in a development transcript and must not be reused.
 - Retention settled at 24 months; `RETENTION_MONTHS` default and the notice agree.
 - Schedule the retention sweep; there is no job yet.
 
+## Designer centring, colour stock and part export (17 Sep 2026)
+
+**BLOCKER: the Supabase project no longer exists.** `qajvsulaieoozhqsjszk.supabase.co`
+returns NXDOMAIN from both local and Cloudflare DNS, while `supabase.co` itself
+resolves — so the project was deleted or paused past the point of keeping its
+hostname. Free-tier projects pause after inactivity and it had been about four
+weeks. Everything database-backed is down until a project exists again:
+
+1. Create the Supabase project (or restore the old one if it can be recovered).
+2. Run **all** of `db/schema.sql` — the original tables plus the three later
+   sections: consent and retention, rate limiting, and colour availability.
+3. Update `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` locally and in Netlify.
+4. Re-create the storage bucket `designs`.
+
+The orders that were in it are gone. They were all test data.
+
+### Artwork was landing off-centre — fixed
+
+`MODEL_ALIGN_ROTATION_Y` was 18 degrees, which put the guard's V-notch at
+u=0.4675: artwork sat 33px left of centre on a 1024px texture and text centred
+in the editor ran off the right-hand side. Measured by sweeping the angle and
+recording where the notch falls in texture coordinates; it crosses the middle at
+**24 degrees**. Now lands at 515px against the guide's 512.
+
+Worth knowing, because it is what makes this easy to get wrong again: the
+on-screen silhouette looks *most* symmetric a few degrees lower, so tuning by
+eye lands near 18-20 and leaves the artwork off. That reading is perspective —
+the wings curve away and foreshorten — and it does not govern where the texture
+goes. The UV measurement is the one that counts.
+
+Side effect: the guard now sits 6 degrees further round in the 3D view. The
+design is correct; the pose changed. Decoupling them is possible but costs about
+6% of the texture width as unusable margin.
+
+### Colour stock control
+
+`colours.js` is now the single source for the palette — eighteen colours that
+were previously eighteen `<div>`s in designer.html. The designer builds its
+swatches from it and the dashboard lists the same set, so adding a colour is one
+edit.
+
+A collapsed panel in the dashboard switches a colour off. Unavailable colours
+stay visible in the designer, greyed with a diagonal bar, unclickable, with a
+note — rather than vanishing, so a customer who came back for the turquoise one
+can see it exists and is out of stock. Selection is refused in code, not only in
+CSS. If the availability request fails the palette stays fully available: being
+unable to reach a stock list is a poor reason to stop someone designing.
+
+Storage holds only the exceptions (`colour_availability`), so adding a colour to
+the palette needs no migration.
+
+### Design parts as PNGs
+
+"Download the parts as PNGs" on an order gives a zip containing each image and
+each text object as its own transparent PNG at 2x print scale, the whole design
+as `00-full-design.png`, and `parts.txt` recording where every part sat in the
+print file's coordinates — a folder of cropped images otherwise says nothing
+about where any of it belonged.
+
+`scripts/zip.js` is a dependency-free ZIP writer, stored not deflated: browsers
+only reliably start one download per gesture, and the page's CSP allows no
+third-party script, so no library could be fetched. Verified against real
+`unzip` — CRCs pass, PNGs extract intact, UTF-8 filenames and content survive.
+
+### Verified, and not
+
+- Centring: verified end to end through the real text tool.
+- Swatches: all 18 render from the palette; degrades correctly when the
+  availability endpoint is unreachable.
+- Stock panel: renders all 18 rows.
+- Zip writer: verified against real `unzip`.
+- **Not verified**: switching a colour off and seeing it grey out, and the parts
+  export on a real order. Both need the database.
+
 ## Still to decide
 
 - **How long orders are kept.** The one GDPR question that isn't a config flag.

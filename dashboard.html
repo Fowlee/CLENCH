@@ -63,6 +63,25 @@
 
       <ul class="orders" id="orders"></ul>
       <p class="empty" id="empty" hidden>No orders match that.</p>
+
+      <!-- Stock control. Switching a colour off here greys it out in the
+           designer straight away, so nobody can order something that can't be
+           made. Collapsed by default: it is checked occasionally, not daily. -->
+      <details class="stock" id="stock">
+        <summary>
+          <span>Colours in stock</span>
+          <span class="stock-count" id="stock-count"></span>
+        </summary>
+
+        <p class="stock-intro">
+          Switch a colour off and customers see it greyed out in the designer,
+          with a note that it is unavailable. Their existing designs are not
+          changed.
+        </p>
+
+        <ul class="stock-list" id="stock-list"></ul>
+        <p class="stock-status" id="stock-status" role="status" aria-live="polite"></p>
+      </details>
     </main>
 
     <!-- DETAIL VIEW -->
@@ -86,6 +105,13 @@
 
           <div class="detail-actions">
             <button type="button" class="button-primary" id="print">PRINT THE DESIGN</button>
+
+            <!-- Each logo and each piece of text as its own transparent PNG,
+                 plus the whole design and a note of where every part sat. -->
+            <button type="button" class="button-secondary" id="export-parts">
+              Download the parts as PNGs
+            </button>
+            <p class="export-status" id="export-parts-status" role="status" aria-live="polite"></p>
             <a class="button-secondary" id="customer-link" href="#" target="_blank" rel="noopener">
               Open the customer's view
             </a>

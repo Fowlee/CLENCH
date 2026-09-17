@@ -77,6 +77,30 @@ async function select(query) {
   return response.json();
 }
 
+/* Insert, or overwrite the row that already has this primary key.
+ *
+ * Used where the caller is stating a fact rather than adding a record — a
+ * colour being out of stock is either true or not, and saying it twice should
+ * not be an error just because two people had the dashboard open.
+ */
+async function upsert(table, row) {
+  const { url, key } = credentials();
+
+  const response = await fetch(url + '/rest/v1/' + table, {
+    method: 'POST',
+    headers: headers(key, {
+      'Content-Type': 'application/json',
+      Prefer: 'resolution=merge-duplicates,return=representation'
+    }),
+    body: JSON.stringify(row)
+  });
+
+  if (!response.ok) await failure(response, 'Upsert into ' + table);
+
+  const rows = await response.json();
+  return rows[0];
+}
+
 async function insert(table, row) {
   const { url, key } = credentials();
 
@@ -225,4 +249,4 @@ async function signedUrl(path, expiresIn) {
   return url + '/storage/v1' + signedURL;
 }
 
-module.exports = { select, insert, update, uploadPng, signedUrl, removeRows, removeFolder };
+module.exports = { select, insert, upsert, update, uploadPng, signedUrl, removeRows, removeFolder };

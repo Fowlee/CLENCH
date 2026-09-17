@@ -11,6 +11,8 @@
  * Every request needs the session cookie set by /.netlify/functions/admin.
  */
 
+import { PALETTE, AVAILABILITY_ENDPOINT } from '../colours.js';
+import { makeZip } from './zip.js';
 import { MouthguardDesigner } from '../mouthguardDesigner.js';
 import { TEXTURE_WIDTH, TEXTURE_HEIGHT, allFontsReady } from '../designFormat.js';
 
@@ -563,5 +565,243 @@ el('export').addEventListener('click', async () => {
   } catch (error) {
     console.error('Exporting the order failed:', error);
     eraseNote.textContent = 'Couldn\'t build that export.';
+  }
+});
+
+/* ----- colour stock -----
+ *
+ * Which guard colours can be ordered today. Switching one off greys it out in
+ * the designer within the minute and stops it being selected, so an athlete
+ * cannot order a guard in a material the workshop has run out of.
+ *
+ * The palette comes from colours.js, the same list the designer draws from, so
+ * a colour added there appears here without a second edit.
+ */
+
+const stockList = el('stock-list');
+const stockStatus = el('stock-status');
+const stockCount = el('stock-count');
+
+let unavailable = new Set();
+
+function renderStock() {
+  stockList.textContent = '';
+
+  PALETTE.forEach(colour => {
+    const off = unavailable.has(colour.hex);
+
+    const row = document.createElement('li');
+    row.className = 'stock-row' + (off ? ' is-off' : '');
+
+    const dot = document.createElement('span');
+    dot.className = 'stock-dot';
+    dot.style.background = colour.hex;
+
+    const name = document.createElement('span');
+    name.className = 'stock-name';
+    name.textContent = colour.name;
+
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'stock-toggle';
+    toggle.textContent = off ? 'Out of stock' : 'In stock';
+    toggle.setAttribute('aria-pressed', String(!off));
+    toggle.addEventListener('click', () => setAvailability(colour, !off));
+
+    row.append(dot, name, toggle);
+    stockList.appendChild(row);
+  });
+
+  const out = unavailable.size;
+  stockCount.textContent = out ? out + ' out of stock' : 'all available';
+}
+
+async function setAvailability(colour, available) {
+  stockStatus.textContent = 'Saving…';
+
+  try {
+    const response = await fetch(AVAILABILITY_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ hex: colour.hex, available })
+    });
+
+    if (response.status === 401) return showSignIn();
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error);
+
+    if (available) unavailable.delete(colour.hex);
+    else unavailable.add(colour.hex);
+
+    renderStock();
+    stockStatus.textContent = colour.name + (available ? ' is available again.' : ' is now out of stock.');
+  } catch (error) {
+    console.error('Could not change colour availability:', error);
+    stockStatus.textContent = "Couldn't save that. Try again.";
+  }
+}
+
+async function loadStock() {
+  try {
+    const response = await fetch(AVAILABILITY_ENDPOINT);
+    const data = await response.json();
+    unavailable = new Set((data.unavailable || []).map(hex => hex.toLowerCase()));
+  } catch (error) {
+    console.error('Could not load colour availability:', error);
+    // An unreachable list is shown as all-available rather than as nothing
+    unavailable = new Set();
+  }
+
+  renderStock();
+}
+
+loadStock();
+
+/* ----- exporting the parts -----
+ *
+ * The workshop asked for the design as separate PNGs rather than one picture:
+ * each logo and each piece of text on its own transparent background, so they
+ * can be cut, printed or re-laid-out individually.
+ *
+ * Every piece is exported at the same scale as the print file, so two PNGs
+ * placed side by side keep the proportions the customer chose. A manifest goes
+ * in alongside them, because a folder of cropped images says nothing about
+ * where any of it belonged.
+ */
+
+// Matches the print sheet, so a part measured off one matches the other.
+const EXPORT_SCALE = 2;
+
+function slug(text) {
+  return String(text || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 24) || 'part';
+}
+
+/* One PNG per object, cropped to the object itself.
+ *
+ * Fabric's toDataURL on an object renders just that object on transparency,
+ * which is exactly what's wanted — but it uses the object's current angle and
+ * scale, so what comes out matches what the customer saw. */
+function exportObject(object, index) {
+  const kind = object.type === 'image' ? 'image' : 'text';
+
+  const label = object.type === 'image'
+    ? 'image'
+    : slug(object.text);
+
+  const dataUrl = object.toDataURL({
+    format: 'png',
+    multiplier: EXPORT_SCALE,
+    enableRetinaScaling: false
+  });
+
+  return {
+    name: String(index + 1).padStart(2, '0') + '-' + kind + '-' + label + '.png',
+    bytes: dataUrlToBytes(dataUrl),
+    object
+  };
+}
+
+function dataUrlToBytes(dataUrl) {
+  const base64 = dataUrl.slice(dataUrl.indexOf(',') + 1);
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
+/* Where each part sat, in the same 1024 x 357 space as the print file. Without
+ * this the PNGs are a pile of shapes with no way to reassemble them. */
+function manifest(order, design, parts) {
+  const lines = [
+    'CLENCH — design parts',
+    '',
+    'Order       ' + order.ref,
+    'Customer    ' + order.name,
+    'Guard       ' + design.baseColor,
+    'Design      version ' + design.version,
+    'Exported    ' + new Date().toISOString(),
+    '',
+    'Positions are in the print file\'s own coordinates: ' +
+      TEXTURE_WIDTH + ' x ' + TEXTURE_HEIGHT + ', origin top-left.',
+    'PNGs are rendered at ' + EXPORT_SCALE + 'x those dimensions.',
+    '',
+    'file'.padEnd(34) + 'left'.padStart(7) + 'top'.padStart(8) +
+      'width'.padStart(8) + 'height'.padStart(8) + '  angle',
+    '-'.repeat(75)
+  ];
+
+  parts.forEach(part => {
+    const o = part.object;
+    const rect = o.getBoundingRect(true);
+
+    lines.push(
+      part.name.padEnd(34) +
+      String(Math.round(rect.left)).padStart(7) +
+      String(Math.round(rect.top)).padStart(8) +
+      String(Math.round(rect.width)).padStart(8) +
+      String(Math.round(rect.height)).padStart(8) +
+      '  ' + Math.round(o.angle || 0) + '\u00b0'
+    );
+  });
+
+  lines.push('');
+  lines.push('The full design is also here as 00-full-design.png.');
+
+  return lines.join('\n');
+}
+
+el('export-parts').addEventListener('click', async () => {
+  if (!openOrder || !openOrder.design) return;
+
+  const { order, design } = openOrder;
+  const status = el('export-parts-status');
+
+  const objects = artCanvas.getObjects();
+  if (!objects.length) {
+    status.textContent = 'This design has nothing in it to export.';
+    return;
+  }
+
+  status.textContent = 'Building the parts…';
+
+  try {
+    // Fonts have to be in before text is rasterised, or it exports in a fallback
+    await allFontsReady();
+
+    const parts = objects.map(exportObject);
+
+    /* The whole design goes in too. The parts answer "what is on it"; this one
+     * answers "what should it look like", and it costs one more file. */
+    const whole = artCanvas.toDataURL({
+      format: 'png',
+      multiplier: EXPORT_SCALE,
+      enableRetinaScaling: false
+    });
+
+    const files = [
+      { name: '00-full-design.png', bytes: dataUrlToBytes(whole) },
+      ...parts.map(({ name, bytes }) => ({ name, bytes })),
+      { name: 'parts.txt', bytes: manifest(order, design, parts) }
+    ];
+
+    const blob = makeZip(files);
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = order.ref + '-parts.zip';
+    link.click();
+
+    URL.revokeObjectURL(url);
+    status.textContent = 'Exported ' + files.length + ' files.';
+  } catch (error) {
+    console.error('Exporting the parts failed:', error);
+    status.textContent = "Couldn't build that export.";
   }
 });

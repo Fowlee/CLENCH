@@ -33,12 +33,27 @@ const FRAMING_PADDING = 1.3;
 // Length of the glide back to the front view, in milliseconds.
 const FOCUS_DURATION = 500;
 
-/* The .glb is modelled facing 18 degrees away from +Z, so a straight-on camera
- * sees it three-quarters on. Measured from the mesh: the U's opening spans
- * 138-186 degrees around the centroid, centred at 162, so the arch's front
- * points at -18. Rotating by +18 squares it up to the camera.
- * Set to 0 if the model is ever re-exported facing forward. */
-const MODEL_ALIGN_ROTATION_Y = 18 * Math.PI / 180;
+/* How far the model has to turn for its own centreline to face the camera.
+ *
+ * This is not a styling choice — it decides where artwork lands. UVs are
+ * projected flat along Z onto world X, so the guard's centre only maps to the
+ * middle of the texture when its mirror plane is square to the camera. At the
+ * wrong angle the projection admits more of one wing than the other and
+ * everything the customer centres drifts sideways.
+ *
+ * It was 18 degrees, which put the V-notch at u=0.4675 — artwork landed 33px
+ * left of centre on a 1024px texture, about 3% of the guard's width, and text
+ * centred in the editor ran off the right-hand side.
+ *
+ * Measured by sweeping the angle and recording where the notch falls in texture
+ * coordinates; it crosses the middle at 24 degrees. To redo that after a model
+ * change, bucket the front-facing vertices by their stored u, take the lowest
+ * top edge across the middle half, and solve for notch u = 0.5.
+ *
+ * Note the on-screen silhouette looks most symmetric a few degrees lower. That
+ * reading is perspective — the wings curve away from the camera and foreshorten
+ * — and it does not govern where the texture goes. Trust the UV measurement. */
+const MODEL_ALIGN_ROTATION_Y = 24 * Math.PI / 180;
 
 /* Where the Draco decoder lives. Served from this site alongside the matching
  * three.js build — a decoder from a different release can fail to read geometry
